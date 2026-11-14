@@ -492,20 +492,22 @@ function wcons(i){const k=S.kind[i];if(S.build[i])return 0;if(isZone(k))return S
 function nb(i,f){const x=i%N,y=(i/N)|0;if(x>0)f(i-1);if(x<N-1)f(i+1);if(y>0)f(i-N);if(y<N-1)f(i+N)}
 
 function computePower(){
-  powered.fill(0);const seen=new Uint8Array(NN);let supply=0,need=0,short=0,buy=0,sell=0,edge=false;
+  powered.fill(0);const seen=new Uint8Array(NN);let supply=0,need=0,short=0,buy=0,sell=0,edge=false,eDef=0,eSur=0;
   const mode=S.trade.pow;
   for(let s=0;s<NN;s++){const k=S.kind[s];if(!seen[s]&&(CAP[k]||(k===LINE&&onEdge(s)))){
     const list=[s];seen[s]=1;let cap=0,ed=false,nneed=0;
     for(let h=0;h<list.length;h++){const i=list[h];cap+=S.build[i]?0:(CAP[S.kind[i]]||0);nneed+=cons(i);if(S.kind[i]===LINE&&onEdge(i))ed=true;
       nb(i,j=>{if(!seen[j]&&conductor(S.kind[j])){seen[j]=1;list.push(j)}});}
     let b=0;
+    if(ed)eDef+=Math.max(0,nneed-cap);
     if(ed){edge=true;if((mode==='buy'||mode==='auto')&&nneed>cap){b=Math.max(0,Math.min(S.market.pow.sup-buy,nneed-cap));cap+=b;buy+=b}}
     supply+=cap;
     for(const i of list){const c=cons(i);if(!c){powered[i]=1;continue}need+=c;if(c<=cap){cap-=c;powered[i]=1}else short++;}
+    if(ed&&!b)eSur+=Math.max(0,Math.floor(cap));
     if(ed&&!b&&(mode==='sell'||mode==='auto')&&cap>=1)sell+=Math.max(0,Math.min(S.market.pow.dem-sell,Math.floor(cap)));
   }}
   for(let i=0;i<NN;i++)if(!seen[i]){const c=cons(i);if(c){need+=c;short++}}
-  T.supply=supply;T.need=need;T.shortage=short;T.powEdge=edge;T.powBuy=buy;T.powSell=sell;
+  T.supply=supply;T.need=need;T.shortage=short;T.powEdge=edge;T.powBuy=buy;T.powSell=sell;T.powEDef=eDef;T.powESur=eSur;
 }
 const isWNode=i=>S.pipe[i]||S.kind[i]===PUMP||S.kind[i]===TREAT;
 function computeWater(){
@@ -522,17 +524,19 @@ function computeWater(){
   const dist=new Uint8Array(NN).fill(255),owner=new Int32Array(NN).fill(-1),q=[];
   for(let i=0;i<NN;i++)if(net[i]>=0){dist[i]=0;owner[i]=net[i];q.push(i)}
   for(let h=0;h<q.length;h++){const i=q[h];if(dist[i]>=2)continue;nb(i,j=>{if(dist[j]===255){dist[j]=dist[i]+1;owner[j]=owner[i];q.push(j)}})}
-  let need=0,short=0,supply=0,buy=0,sell=0,sew=0,treated=0,edge=false;
+  let need=0,short=0,supply=0,buy=0,sell=0,sew=0,treated=0,edge=false,eDef=0,eSur=0;
   for(let i=0;i<NN;i++){const c=wcons(i);if(!c)continue;need+=c;if(owner[i]>=0){const n=nets[owner[i]];n.need+=c;n.cons.push(i)}else short++}
   for(const n of nets){let cap=n.cap,b=0;
+    if(n.ed)eDef+=Math.max(0,n.need-cap);
     if(n.ed){edge=true;if((mode==='buy'||mode==='auto')&&n.need>cap){b=Math.max(0,Math.min(S.market.wat.sup-buy,n.need-cap));cap+=b;buy+=b}}
     supply+=cap;let used=0;
     for(const i of n.cons){const c=wcons(i);if(c<=cap){cap-=c;used+=c;watered[i]=1}else short++}
+    if(n.ed&&!b)eSur+=Math.max(0,Math.floor(cap));
     if(n.ed&&!b&&(mode==='sell'||mode==='auto')&&cap>=1)sell+=Math.max(0,Math.min(S.market.wat.dem-sell,Math.floor(cap)));
     sew+=used;const tr=Math.min(used,n.treat);treated+=tr;
     const ratio=used?(used-tr)/used:0;
     if(ratio>0)for(const i of n.cons)if(watered[i])sewPol[i]=ratio*14;}
-  T.wSupply=supply;T.wNeed=need;T.wShort=short;T.watEdge=edge;T.watBuy=buy;T.watSell=sell;T.sewage=sew;T.treated=treated;T.treatCap=nets.reduce((a,n)=>a+n.treat,0);
+  T.wSupply=supply;T.wNeed=need;T.wShort=short;T.watEdge=edge;T.watBuy=buy;T.watSell=sell;T.watEDef=eDef;T.watESur=eSur;T.sewage=sew;T.treated=treated;T.treatCap=nets.reduce((a,n)=>a+n.treat,0);
 }
 function computeAccess(){
   const d=new Uint8Array(NN).fill(255);const q=[];
@@ -717,7 +721,7 @@ function marketMonth(){
   const p=mpPartner();
   if(p){for(const r of ['pow','wat','garb']){const k=S.market[r],mine=(MP.lastOffer&&MP.lastOffer[r])||{sur:0,def:0},th=offerOf(p,r);
       const ratio=(mine.def+th.def+30)/(mine.sur+th.sur+30);
-      k.m=Math.max(0.4,Math.min(2.5,Math.sqrt(ratio)));k.dem=th.def;k.sup=th.sur;k.ev=1;k.evLeft=0;
+      k.m=Math.max(0.4,Math.min(2.5,Math.sqrt(ratio)));k.dem=Math.min(th.def,mine.sur);k.sup=Math.min(th.sur,mine.def);k.ev=1;k.evLeft=0;
       k.hist.push(+k.m.toFixed(2));if(k.hist.length>24)k.hist.shift()}
     return}
   for(const r in S.market){const k=S.market[r];
@@ -1198,17 +1202,17 @@ const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const clampN=(v,a,b)=>{v=Number(v);return isFinite(v)?Math.max(a,Math.min(b,v)):a};
 function offerOf(p,r){const o=p&&p.offer&&p.offer[r]||{};return{sur:Math.round(clampN(o.sur,0,1000)),def:Math.round(clampN(o.def,0,1000))}}
 function mpPartner(){const p=MP.partner;if(!p||!MP.conn||!MP.conn.open)return null;return Date.now()-p.rx<60000?p:null}
-function myOffers(){const tm=S.trade;
-  const f=(mode,cap,need,edge)=>({sur:edge&&(mode==='sell'||mode==='auto')?Math.max(0,Math.floor(cap-need)):0,def:edge&&(mode==='buy'||mode==='auto')?Math.max(0,Math.ceil(need-cap)):0});
-  return{pow:f(tm.pow,T.supply-T.powBuy,T.need,T.powEdge),wat:f(tm.wat,T.wSupply-T.watBuy,T.wNeed,T.watEdge),garb:f(tm.garb,T.gCap,T.garbage,T.roadEdge)}}
+function myOffers(){const tm=S.trade,can=(m,side)=>m==='auto'||m===side;
+  const g=(mode,sur,def)=>({sur:can(mode,'sell')?Math.max(0,Math.floor(sur)):0,def:can(mode,'buy')?Math.max(0,Math.ceil(def)):0});
+  return{pow:g(tm.pow,T.powESur||0,T.powEDef||0),wat:g(tm.wat,T.watESur||0,T.watEDef||0),garb:T.roadEdge?g(tm.garb,Math.max(0,T.gCap-T.garbage),Math.max(0,T.garbage-T.gCap)):{sur:0,def:0}}}
 const genCode=()=>{const al='abcdefghjkmnpqrstuvwxyz23456789';let c='';for(let i=0;i<6;i++)c+=al[Math.floor(Math.random()*al.length)];return c};
 const normCode=v=>String(v||'').toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,12);
 const inviteUrl=code=>location.origin+location.pathname+'#join-'+code;
 function mpButtons(){const inRoom=!!MP.room,ok=MP.state!=='unavailable';
   $('mpHost').disabled=!ok||inRoom;$('mpJoin').disabled=!ok||inRoom;$('mpCode').disabled=!ok||inRoom;$('mpLeave').hidden=!inRoom;if(!inRoom)$('mpInvite').hidden=true}
 function mpStatus(st,msg){MP.state=st;if(msg)$('mpNote').textContent=msg;mpButtons()}
-function mpSend(force){if(!MP.conn||!MP.conn.open)return;const now=Date.now();if(!force&&now-MP.lastWrite<2000)return;MP.lastWrite=now;
-  const offer=myOffers();MP.lastOffer=offer;
+function mpSend(force){if(!MP.conn||!MP.conn.open)return;const now=Date.now(),offer=myOffers(),chg=JSON.stringify(offer)!==JSON.stringify(MP.lastOffer);
+  if(!force&&now-MP.lastWrite<(chg?300:2000))return;MP.lastWrite=now;MP.lastOffer=offer;
   try{MP.conn.send({t:'state',city:String(S.name).slice(0,24),pop:T.pop,rank:S.rank,month:S.month,offer})}catch(e){}}
 const mpWrite=mpSend;
 setInterval(()=>mpSend(true),5000);
