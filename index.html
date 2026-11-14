@@ -148,6 +148,16 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 .taxl{font-size:12.5px;font-weight:600}
 .mis-t{margin:0;font-weight:600;line-height:1.35}
 .tool.locked{opacity:.4}
+.techs{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.techs li{border:1px solid var(--line);border-radius:8px;padding:9px 10px;display:flex;flex-direction:column;gap:5px;background:var(--panel-2)}
+.techs li.done{opacity:.7}
+.techs li.cur{border-color:var(--accent)}
+.techs .th{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.techs .th b{font-size:13px}
+.techs .th span{font-family:var(--font-num);font-size:11.5px;color:var(--muted);white-space:nowrap}
+.techs p{margin:0;font-size:12px;color:var(--muted);line-height:1.35}
+.techs button{align-self:flex-start;border:1px solid var(--accent);background:transparent;color:var(--accent);border-radius:6px;padding:4px 10px;font-weight:600;font-size:12px;cursor:pointer}
+.techs button:disabled{opacity:.45;cursor:not-allowed}
 .mprow{display:flex;gap:6px}
 .mprow input{flex:1;min-width:0;border:1px solid var(--line);background:var(--panel-2);color:var(--ink);border-radius:6px;padding:7px 9px;font:inherit;font-family:var(--font-num);font-size:13px}
 .mprow button,#mpLeave{border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink);border-radius:6px;padding:7px 12px;font-weight:600;font-size:13px;cursor:pointer}
@@ -198,7 +208,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
       <span class="rank" id="rank">Tanya</span>
     </div>
     <div class="stats">
-      <div class="stat"><span class="l">Dátum</span><span class="v" id="sDate">1950. jan.</span></div>
+      <div class="stat"><span class="l">Dátum</span><span class="v" id="sDate">1950. jan.</span><span class="d" id="sPhase"></span></div>
       <div class="stat"><span class="l">Kassza</span><span class="v" id="sMoney">20 000 Ft</span></div>
       <div class="stat"><span class="l">Lakosság</span><span class="v" id="sPop">0</span></div>
       <div class="stat"><span class="l">Havi egyenleg</span><span class="v" id="sNet">0 Ft</span></div>
@@ -220,6 +230,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
         <button data-tab="city" aria-pressed="true">Város</button>
         <button data-tab="money" aria-pressed="false">Pénzügy</button>
         <button data-tab="advice" aria-pressed="false">Tanácsadók</button>
+        <button data-tab="research" aria-pressed="false">Kutatás</button>
         <button data-tab="settings" aria-pressed="false">Beállítás</button>
       </div>
       <section data-tab="city">
@@ -302,6 +313,17 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
       <section data-tab="advice" hidden>
         <h2>Hírek</h2>
         <ul class="news" id="news"></ul>
+      </section>
+      <section data-tab="research" hidden>
+        <h2>Kutatás</h2>
+        <label for="resBudget" class="taxl">Havi kutatási keret</label>
+        <div class="tax"><input type="range" id="resBudget" min="0" max="600" step="25" value="0"><output id="resOut">0 Ft</output></div>
+        <div class="note" id="resNote"></div>
+        <div id="resCur"></div>
+      </section>
+      <section data-tab="research" hidden>
+        <h2>Fejlesztések</h2>
+        <ul class="techs" id="techList"></ul>
       </section>
       <section data-tab="settings" hidden>
         <h2>Többjátékos</h2>
@@ -389,6 +411,32 @@ function problemsAt(i){const k=S.kind[i];if(!k||S.burn[i]||S.build[i])return '';
   if(wcons(i)>0&&!watered[i]&&T.wSupply>0)p+='w';
   if(isZone(k)&&!access[i])p+='r';
   return p}
+const SOLAR=24, NUKE=25;
+Object.assign(KN,{24:'Napelempark',25:'Atomerőmű'});Object.assign(UPKEEP,{24:3,25:150});Object.assign(BUILD,{24:2,25:18});Object.assign(SJOB,{24:1,25:60});
+CAP[SOLAR]=40;CAP[NUKE]=400;
+const TECHS=[
+  {id:'bigtower',name:'Nagy víztorony',cost:2500,desc:'A víztornyok kapacitása 600-ról 1200 egységre nő.'},
+  {id:'wells',name:'Mélyfúrású kutak',cost:2000,desc:'A víztől távoli vízművek is 90 egység vizet adnak (eddig 50).'},
+  {id:'treat2',name:'Korszerű víztisztítás',cost:2500,desc:'A szennyvíztisztítók 50%-kal több szennyvizet tisztítanak.'},
+  {id:'patrol',name:'Járőrautók',cost:2500,desc:'A rendőrség hatósugara 9-ről 13 mezőre nő.'},
+  {id:'firetruck',name:'Gyorsabb tűzoltóautók',cost:2500,desc:'A tűzoltóság hatósugara 9-ről 13 mezőre nő.'},
+  {id:'ambulance',name:'Mentőszolgálat',cost:2500,desc:'A kórház hatósugara 10-ről 14 mezőre nő.'},
+  {id:'solar2',name:'Hatékony napelemek',cost:3000,desc:'A napelemparkok nappal 60 MW-ot termelnek (eddig 40).'},
+  {id:'battery',name:'Akkumulátorok',cost:4000,req:'solar2',desc:'A napelemparkok éjszaka is termelik a nappali teljesítményük 40%-át.'},
+  {id:'filter',name:'Füstgázszűrők',cost:3500,desc:'A szénerőművek feleannyira szennyeznek.'},
+  {id:'recyc2',name:'Modern hulladékkezelés',cost:3000,desc:'Az újrahasznosító 120 egységet dolgoz fel (eddig 60), a lerakókba 50%-kal több szemét fér.'},
+  {id:'taxoffice',name:'Digitális adóhivatal',cost:3000,desc:'Minden adóbevétel 6%-kal nő.'},
+  {id:'nuke',name:'Atomenergia',cost:8000,req:'filter',desc:'Építhető lesz az atomerőmű: 400 MW, szennyezés nélkül, de drága, és 18 hónapig épül.'}];
+const TECH=Object.fromEntries(TECHS.map(t=>[t.id,t]));
+const has=id=>!!(S&&S.research&&S.research.done[id]);
+const isNight=()=>S.month%3===2;
+const wcapFar=()=>has('wells')?90:WCAP_FAR;
+const treatCap=()=>has('treat2')?Math.round(TREATCAP*1.5):TREATCAP;
+const towerCap=()=>has('bigtower')?TOWERCAP*2:TOWERCAP;
+const lfSize=()=>has('recyc2')?Math.round(LF_SIZE*1.5):LF_SIZE;
+const gcapOf=k=>k===RECYC&&has('recyc2')?120:GCAP[k];
+const radOf=k=>{const b=RAD[k];if(!b)return 0;if(k===POLICE&&has('patrol'))return b+4;if(k===FIRE&&has('firetruck'))return b+4;if(k===HOSP&&has('ambulance'))return b+4;return b};
+function capOf(i){const k=S.kind[i];if(k===SOLAR){const day=has('solar2')?60:40;return isNight()?(has('battery')?Math.round(day*0.4):0):day}return CAP[k]||0}
 const builtAny=k=>{for(let i=0;i<NN;i++)if(S.kind[i]===k&&!S.build[i])return true;return false};
 const RAD={8:9,9:9,10:8,11:10,12:3,19:5,20:12,22:15};
 const COVOV={cpol:[POLICE,'59,91,168'],cfire:[FIRE,'200,60,48'],chosp:[HOSP,'214,60,110'],cedu:[SCHOOL,'200,140,30']};
@@ -418,6 +466,8 @@ const TOOLS=[
   {id:'ind',g:'Övezetek',name:'Ipari',cost:25,kind:IZ,mode:'rect',sw:'#d6971f',hint:'Gyárak: sok munkahely, de szennyez. Tedd távolabb a lakóktól.'},
   {id:'coal',g:'Energia',name:'Szénerőmű',cost:3000,kind:COAL,mode:'single',sw:'#6b6b6b',hint:'150 MW, erősen szennyez. Fenntartás 40 Ft/hó.'},
   {id:'wind',g:'Energia',name:'Szélerőmű',cost:600,kind:WIND,mode:'single',sw:'#e6ecee',hint:'30 MW tiszta energia. Fenntartás 6 Ft/hó.'},
+  {id:'solar',g:'Energia',name:'Napelempark',cost:900,kind:SOLAR,mode:'single',sw:'#2f5d8f',hint:'Nappal 40 MW tiszta energia, éjszaka (minden 3. hónapban) semmi. Fenntartás 3 Ft/hó.'},
+  {id:'nuke',g:'Energia',name:'Atomerőmű',cost:20000,kind:NUKE,mode:'single',sw:'#b7c2c9',tech:'nuke',unique:false,hint:'Kutatás után építhető. 400 MW, szennyezés nélkül. Fenntartás 150 Ft/hó.'},
   {id:'pump',g:'Víz',name:'Vízmű',cost:700,kind:PUMP,mode:'single',sw:'#5f86a8',hint:'Vízparton 120, máshol 50 egység víz. Áram kell hozzá. Fenntartás 20 Ft/hó.'},
   {id:'treat',g:'Víz',name:'Szennyvíztisztító',cost:1200,kind:TREAT,mode:'single',sw:'#6b8f6a',hint:'150 egység szennyvizet tisztít a vízhálózaton. Áram kell hozzá. Fenntartás 30 Ft/hó.'},
   {id:'tower',g:'Víz',name:'Víztorony',cost:800,kind:TOWER,mode:'single',sw:'#9bb3c4',hint:'600 egység vizet tárol. A felesleg ide gyűlik, hiánynál innen pótol a város, és a szomszédnak csak a tárolt vízből tudsz eladni (Automata módban 25% tartalék marad). Vízcsőre kell kötni. Fenntartás 8 Ft/hó.'},
@@ -492,7 +542,7 @@ function newGame(seed){
   pushMsg('Üdv, polgármester! Jelölj ki övezeteket az utak mellett. Az első küldetésedet a Városháza Város fülén találod.','good');
 }
 
-function fixDefaults(){S.watStock=+S.watStock||0;S.lfStock=+S.lfStock||0;if(!isFinite(S.money))S.money=0;if(!isFinite(S.month))S.month=0;if(!isFinite(S.rank))S.rank=0;if(!SPEEDMS.hasOwnProperty(S.speed))S.speed=1;S.taxR??=S.tax??9;S.taxC??=S.tax??9;S.taxI??=S.tax??9;S.loans??=[];S.mission??=0;S.disasters??=true;S.gExport??=false;S.market??=newMarket();S.trade.garb??=(S.gExport?'auto':'off');S.lastLoan??=0;S.hiTechMsg??=0}
+function fixDefaults(){S.research=S.research&&typeof S.research==='object'?S.research:{budget:0,done:{},cur:null,pts:0};S.research.done=S.research.done||{};S.research.pts=+S.research.pts||0;S.research.budget=+S.research.budget||0;S.watStock=+S.watStock||0;S.lfStock=+S.lfStock||0;if(!isFinite(S.money))S.money=0;if(!isFinite(S.month))S.month=0;if(!isFinite(S.rank))S.rank=0;if(!SPEEDMS.hasOwnProperty(S.speed))S.speed=1;S.taxR??=S.tax??9;S.taxC??=S.tax??9;S.taxI??=S.tax??9;S.loans??=[];S.mission??=0;S.disasters??=true;S.gExport??=false;S.market??=newMarket();S.trade.garb??=(S.gExport?'auto':'off');S.lastLoan??=0;S.hiTechMsg??=0}
 function afterLoad(){
   fixDefaults();
   grassCol=new Array(NN);
@@ -504,7 +554,7 @@ function afterLoad(){
   document.getElementById('cityName').value=S.name;
   setSpeed(S.speed??1);syncTrade();
   if(S.cam&&isFinite(S.cam.x)&&isFinite(S.cam.y)&&isFinite(S.cam.z)&&S.cam.z>0){cam.x=S.cam.x;cam.y=S.cam.y;cam.z=S.cam.z;clampCam()}else centerCam();
-  hud();renderNews();updateAdvisors(false);renderMission();showGameOver();
+  hud();renderNews();updateAdvisors(false);renderMission();showGameOver();renderResearch();
 }
 
 /* ---------- szimuláció ---------- */
@@ -523,7 +573,7 @@ function computePower(){
   const mode=S.trade.pow;
   for(let s=0;s<NN;s++){const k=S.kind[s];if(!seen[s]&&(CAP[k]||(k===LINE&&onEdge(s)))){
     const list=[s];seen[s]=1;let cap=0,ed=false,nneed=0;
-    for(let h=0;h<list.length;h++){const i=list[h];cap+=S.build[i]?0:(CAP[S.kind[i]]||0);nneed+=cons(i);if(S.kind[i]===LINE&&onEdge(i))ed=true;
+    for(let h=0;h<list.length;h++){const i=list[h];cap+=S.build[i]?0:capOf(i);nneed+=cons(i);if(S.kind[i]===LINE&&onEdge(i))ed=true;
       nb(i,j=>{if(!seen[j]&&conductor(S.kind[j])){seen[j]=1;list.push(j)}});}
     let b=0;
     if(ed)eDef+=Math.max(0,nneed-cap);
@@ -543,8 +593,8 @@ function computeWater(){
   for(let s=0;s<NN;s++){if(net[s]>=0||!isWNode(s))continue;
     const id=nets.length,list=[s];net[s]=id;let cap=0,treat=0,ed=false,tower=0;
     for(let h=0;h<list.length;h++){const i=list[h],k=S.kind[i];
-      if(k===PUMP&&powered[i]&&!S.burn[i]&&!S.build[i])cap+=waterNear[i]?WCAP_NEAR:WCAP_FAR;
-      if(k===TREAT&&powered[i]&&!S.burn[i]&&!S.build[i])treat+=TREATCAP;
+      if(k===PUMP&&powered[i]&&!S.burn[i]&&!S.build[i])cap+=waterNear[i]?WCAP_NEAR:wcapFar();
+      if(k===TREAT&&powered[i]&&!S.burn[i]&&!S.build[i])treat+=treatCap();
       if(k===TOWER&&!S.burn[i]&&!S.build[i])tower++;
       if(S.pipe[i]&&onEdge(i))ed=true;
       nb(i,j=>{if(net[j]<0&&isWNode(j)){net[j]=id;list.push(j)}});}
@@ -554,7 +604,7 @@ function computeWater(){
   for(let h=0;h<q.length;h++){const i=q[h];if(dist[i]>=2)continue;nb(i,j=>{if(dist[j]===255){dist[j]=dist[i]+1;owner[j]=owner[i];q.push(j)}})}
   let need=0,short=0,supply=0,buy=0,sell=0,sew=0,treated=0,edge=false,eDef=0,eSur=0;
   for(let i=0;i<NN;i++){const c=wcons(i);if(!c)continue;need+=c;if(owner[i]>=0){const n=nets[owner[i]];n.need+=c;n.cons.push(i)}else short++}
-  let stockCap=0,towerEdge=false;for(const n of nets){stockCap+=n.tower*TOWERCAP;if(n.tower&&n.ed)towerEdge=true}
+  let stockCap=0,towerEdge=false;for(const n of nets){stockCap+=n.tower*towerCap();if(n.tower&&n.ed)towerEdge=true}
   let stockLeft=Math.min(S.watStock||0,stockCap),fill=0,draw=0;
   for(const n of nets){let cap=n.cap,b=0;
     if(n.tower&&n.need>cap&&stockLeft>0){const d=Math.min(stockLeft,n.need-cap);cap+=d;stockLeft-=d;draw+=d}
@@ -587,10 +637,10 @@ function spread(out,src,R){out.fill(0);
       const dd=Math.hypot(dx,dy);if(dd>R)continue;out[y*N+x]+=v*(1-dd/(R+1));}}}
 function recompute(){
   computePower();computeWater();computeAccess();
-  cover(covPol,POLICE,9,true);cover(covFire,FIRE,9,true);cover(covEdu,SCHOOL,8,true);cover(covHosp,HOSP,10,true);cover(covPark,PARK,3,false);cover(covHall,HALL,12,false);cover(covAmuse,AMUSE,15,false);cover(covStatue,STATUE,5,false);
+  cover(covPol,POLICE,radOf(POLICE),true);cover(covFire,FIRE,radOf(FIRE),true);cover(covEdu,SCHOOL,radOf(SCHOOL),true);cover(covHosp,HOSP,radOf(HOSP),true);cover(covPark,PARK,3,false);cover(covHall,HALL,12,false);cover(covAmuse,AMUSE,15,false);cover(covStatue,STATUE,5,false);
   const sp=new Float32Array(NN), sc=new Float32Array(NN);
   for(let i=0;i<NN;i++){const k=S.kind[i],d=S.dens[i];
-    if(k===IZ)sp[i]=d?(hiTech(i)?1+d:2+d*4):0;else if(k===COAL)sp[i]=30;else if(k===INCIN)sp[i]=24;else if(k===LANDFILL)sp[i]=9;else if(k===RECYC)sp[i]=1.5;else if(k===CZ)sp[i]=d*1.5;else if(k===ROAD)sp[i]=T.pop>2000?0.9:0.4;
+    if(k===IZ)sp[i]=d?(hiTech(i)?1+d:2+d*4):0;else if(k===COAL)sp[i]=has('filter')?14:30;else if(k===INCIN)sp[i]=24;else if(k===LANDFILL)sp[i]=9;else if(k===RECYC)sp[i]=1.5;else if(k===CZ)sp[i]=d*1.5;else if(k===ROAD)sp[i]=T.pop>2000?0.9:0.4;
     if(S.build[i])sp[i]=0;
     if(k===RZ)sc[i]=d*4;else if(k===CZ)sc[i]=d*5;else if(k===IZ)sc[i]=d*3;}
   spread(pol,sp,5);spread(crm,sc,3);
@@ -621,9 +671,9 @@ function totals(){let p=0,c=0,ind=0,sv=0,na=0;
   T.demC=cl((ct-c)/ct-tk(S.taxC));
   T.demI=cl((it-ind)/it-tk(S.taxI));
   let incCap=0,lfIn=0,lfN=0;for(let i=0;i<NN;i++){const k=S.kind[i];if(!GCAP[k]||!access[i]||S.burn[i]||S.build[i])continue;
-    if(k===LANDFILL){lfIn+=GCAP[k];lfN++}else if(powered[i])incCap+=GCAP[k]}
+    if(k===LANDFILL){lfIn+=GCAP[k];lfN++}else if(powered[i])incCap+=gcapOf(k)}
   T.garbage=Math.round(p*0.05+c*0.04+ind*0.06);T.roadEdge=hasRoadEdge();
-  const lfCap=lfN*LF_SIZE,lfStock=Math.min(S.lfStock||0,lfCap),lfFree=Math.max(0,lfCap-lfStock);
+  const lfCap=lfN*lfSize(),lfStock=Math.min(S.lfStock||0,lfCap),lfFree=Math.max(0,lfCap-lfStock);
   const gm=S.trade.garb,mk=S.market.garb;let rem=T.garbage;
   const burnt=Math.min(rem,incCap);rem-=burnt;
   const dump=Math.min(rem,lfIn,lfFree);rem-=dump;
@@ -668,14 +718,15 @@ function simMonth(){
   }
   recompute();totals();
   const sales=T.powSell*price('pow','s')+T.watSell*price('wat','s')+T.gImport*price('garb','s'), buys=T.powBuy*price('pow','b')+T.watBuy*price('wat','b')+T.gExport*price('garb','b');
-  const inc=Math.round(S.taxR*(T.pop*0.06+T.jobsS*0.02)+S.taxC*T.jobsC*0.05+S.taxI*T.jobsI*0.05+sales);
+  const inc=Math.round((has('taxoffice')?1.06:1)*(S.taxR*(T.pop*0.06+T.jobsS*0.02)+S.taxC*T.jobsC*0.05+S.taxI*T.jobsI*0.05)+sales);
   let loanPay=0;S.loans=S.loans.filter(l=>{loanPay+=l.pay||LOAN.pay;l.left--;return l.left>0});
   if(loanPay&&!S.loans.length)pushMsg('Az utolsó hitelt is visszafizetted.','good');
-  let exp=buys+loanPay;for(let i=0;i<NN;i++){exp+=UPKEEP[S.kind[i]]||0;if(S.pipe[i])exp+=0.2}exp=Math.round(exp);
+  const resSpend=S.research.budget||0;let exp=buys+loanPay+resSpend;for(let i=0;i<NN;i++){exp+=UPKEEP[S.kind[i]]||0;if(S.pipe[i])exp+=0.2}exp=Math.round(exp);
   S.money+=inc-exp;S.lastInc=inc;S.lastExp=exp;
   while(S.money<0&&S.loans.length<LOAN.max){S.loans.push({left:LOAN.months,pay:LOAN.autoPay,auto:1});S.money+=LOAN.amount;
     pushMsg(`Kiürült a kassza, ezért a bank kényszerhitelt adott: +${fmtN(LOAN.amount)} Ft, de drágábban: ${LOAN.autoPay} Ft/hó, ${LOAN.months} hónapig. Még ${LOAN.max-S.loans.length} hitel fér bele.`,'warn')}
   if(S.money<0&&!S.over){S.over={month:S.month,pop:T.pop,money:S.money};}S.lastTrade=Math.round(sales-buys);S.lastLoan=loanPay;
+  researchMonth(resSpend);
   S.watStock=Math.round(T.watStockAfter||0);S.lfStock=Math.round(T.lfAfter||0);dirty=true;
   if(T.lfCap&&S.lfStock>=T.lfCap*0.9&&!S.lfWarn){S.lfWarn=1;pushMsg(S.lfStock>=T.lfCap?'Megtelt a hulladéklerakó! Nem fogad több szemetet. Építs újat, vagy szemétégetőt, ami apasztja.':'A hulladéklerakó 90%-ig megtelt.','warn')}
   if(T.lfCap&&S.lfStock<T.lfCap*0.8)S.lfWarn=0;
@@ -733,6 +784,7 @@ function advisorSays(){
   o.dev=T.sat<40&&T.pop>100?[2,`Elégedetlenek a lakók (${Math.round(T.sat)}%). Az adó, a munkanélküliség, a szennyezés és a hiányzó szolgáltatások rontják a hangulatot.`]
     :T.unemp>0.2&&T.pop>200?[1,`A munkaképes lakók ${pct(T.unemp)}-a munkanélküli. Jelölj ki ipari vagy kereskedelmi övezetet.`]
     :T.noAccess>4?[1,`${T.noAccess} övezeti mező nem éri el az utat (legfeljebb 3 mező kell).`]
+    :S.research&&!S.research.cur&&S.research.budget>0?[1,'Fizetünk a kutatásért, de nincs kiválasztott téma. Válassz egyet a Kutatás fülön.']
     :nextSpecial?[0,`Most már építhetsz: ${nextSpecial.name.toLowerCase()}. Megtalálod az eszköztár végén.`]
     :m>0.5?[0,m===T.demR?'Az emberek ide akarnak költözni. Jelölj ki új lakóövezetet.':m===T.demC?'A lakók boltokat és irodákat hiányolnak.':'Az ipar terjeszkedne. Jelölj ki ipari területet.']
     :[0,'A város szépen fejlődik.'];
@@ -792,6 +844,24 @@ function mktHtml(r,lb,ls){const k=S.market[r],h=k.hist,prev=h.length>1?h[h.lengt
     `<span>${lb} <b>${fmtP(price(r,'b'))}</b> · ${ls} <b>${fmtP(price(r,'s'))}</b> Ft ${arrow}<br>szomszéd most: ${r==='garb'?'átadna':'venne'} ≤ ${fmtN(k.dem)}, ${r==='garb'?'átvenne':'adna'} ≤ ${fmtN(k.sup)}</span>`}
 function hasRoadEdge(){for(let n=0;n<N;n++){if(S.kind[n]===ROAD||S.kind[(N-1)*N+n]===ROAD||S.kind[n*N]===ROAD||S.kind[n*N+N-1]===ROAD)return true}return false}
 
+/* ---------- kutatás ---------- */
+const resRate=()=>builtAny(SCHOOL)?1.25:1;
+function researchMonth(spent){const R=S.research;R.pts+=Math.round(spent*resRate());
+  if(R.cur&&TECH[R.cur]&&!R.done[R.cur]&&R.pts>=TECH[R.cur].cost){const tc=TECH[R.cur];R.pts-=tc.cost;R.done[R.cur]=1;R.cur=null;dirty=true;
+    pushMsg(`Kutatás kész: ${tc.name}. ${tc.desc}`,'good');
+    const next=TECHS.find(x=>!R.done[x.id]&&(!x.req||R.done[x.req]));if(next&&R.pts>0)pushMsg('Válassz új kutatást a Városháza Kutatás fülén.')}
+  renderResearch()}
+function renderResearch(){const R=S.research,rate=resRate();if(!$('techList'))return;
+  if(document.activeElement!==$('resBudget'))$('resBudget').value=R.budget;$('resOut').textContent=fmtN(R.budget)+' Ft';
+  $('resNote').textContent=`${fmtN(Math.round(R.budget*rate))} kutatási pont havonta${rate>1?' (az iskola miatt +25%)':'. Egy iskola 25%-kal gyorsítaná'}. A keret havi kiadásként jelenik meg.`;
+  const c=R.cur&&TECH[R.cur];
+  if(c){const per=R.budget*rate,left=Math.max(0,c.cost-R.pts),mo=per>0?Math.ceil(left/per):null;
+    $('resCur').innerHTML=`<div class="row"><span>Most: <b>${c.name}</b></span><span class="v">${fmtN(Math.min(R.pts,c.cost))} / ${fmtN(c.cost)}</span></div><div class="meter"><i style="width:${Math.min(100,R.pts/c.cost*100)}%;background:var(--accent)"></i></div><div class="note">${mo?`Még kb. ${mo} hónap.`:'Állíts be havi keretet, különben nem halad.'}</div>`}
+  else $('resCur').innerHTML=`<div class="note">Nincs kiválasztott kutatás.${R.pts>0?` Összegyűlt ${fmtN(R.pts)} pont, ez beleszámít a következőbe.`:''} Válassz egyet lent.</div>`;
+  $('techList').innerHTML=TECHS.map(t=>{const done=R.done[t.id],cur=R.cur===t.id,locked=t.req&&!R.done[t.req];
+    const act=done?'<span class="pill ok">Kész</span>':cur?'<span class="pill ok">Folyamatban</span>':locked?`<span class="note">Előbb: ${TECH[t.req].name}</span>`:`<button data-tech="${t.id}">Ezt kutassuk</button>`;
+    return `<li class="${done?'done':''} ${cur?'cur':''}"><div class="th"><b>${t.name}</b><span>${fmtN(t.cost)} pont</span></div><p>${t.desc}</p>${act}</li>`}).join('')}
+
 /* ---------- katasztrófák ---------- */
 const fx=[];let shakeUntil=0;
 const focusTile=i=>{const x=i%N,y=(i/N)|0;cam.x=(x-y)*HW;cam.y=(x+y)*HH};
@@ -829,6 +899,7 @@ function costAt(t,i){
   const k=S.kind[i];
   if(t.rank&&S.rank<t.rank)return null;
   if(t.unique&&S.kind.includes(t.kind))return null;
+  if(t.tech&&!has(t.tech))return null;
   if(t.id==='pipe')return S.pipe[i]?null:(S.terrain[i]===WATER?15:5);
   if(t.id==='bull'){if(overlay==='water')return S.pipe[i]?3:null;if(k)return isFacility(k)?50:5;if(S.terrain[i]===TREE)return 3;return null}
   if(k)return null;
@@ -838,6 +909,7 @@ function costAt(t,i){
 let moneyWarnAt=0;
 function applyTiles(t,list){
   if(S.over)return;
+  if(t.tech&&!has(t.tech)){pushMsg(`${t.name}: előbb ki kell kutatni (${TECH[t.tech].name}).`,'warn');return}
   if(t.rank&&S.rank<t.rank){pushMsg(`${t.name}: ${TITLES[t.rank][1]} rangtól építhető (${fmtN(TITLES[t.rank][0])} lakos).`,'warn');return}
   if(t.unique&&S.kind.includes(t.kind)){pushMsg(`Csak egy ${t.name.toLowerCase()} lehet a városban.`,'warn');return}
   let spent=0,n=0,blocked=false;
@@ -908,7 +980,7 @@ const pal={
 const pick=(a,h)=>a[Math.floor(h*a.length)%a.length];
 function bHeight(i){const k=S.kind[i],d=S.dens[i];
   if(k===RZ)return [0,16,26,56][d];if(k===CZ)return [0,13,34,74][d];if(k===IZ)return [0,11,17,22][d];
-  return {23:40,6:22,7:52,8:17,9:17,10:15,11:29,14:24,15:10,16:6,17:20,18:14,19:20,20:32,21:12,22:48}[k]||0}
+  return {24:5,25:46,23:40,6:22,7:52,8:17,9:17,10:15,11:29,14:24,15:10,16:6,17:20,18:14,19:20,20:32,21:12,22:48}[k]||0}
 
 function drawGround(x,y,cx,cy,t){
   const i=y*N+x,k=S.kind[i],ter=S.terrain[i];
@@ -1018,6 +1090,14 @@ function drawObject(x,y,cx,cy,t){
     ctx.fillStyle='#aebdc8';ctx.fillRect(cx-11,ty-16,22,16);ctx.beginPath();ctx.ellipse(cx,ty,11,5,0,0,Math.PI);ctx.fill();
     ctx.fillStyle='#d5dfe6';ctx.beginPath();ctx.ellipse(cx,ty-16,11,5,0,0,7);ctx.fill();
     ctx.fillStyle='#4a5a66';ctx.fillRect(cx-3,ty-14,6,13);ctx.fillStyle='#4f9be0';ctx.fillRect(cx-3,ty-1-13*fr,6,13*fr)}
+  else if(k===SOLAR){const nt=isNight();for(const [u0,u1,v0,v1] of [[-.42,-.04,-.42,-.04],[.04,.42,-.42,-.04],[-.42,-.04,.04,.42],[.04,.42,.04,.42]]){
+      ctx.save();ctx.translate(0,-4);quad(cx,cy,u0,u1,v0,v1);ctx.fillStyle=nt?'#15283d':'#2a5584';ctx.fill();ctx.strokeStyle=nt?'#3a5068':'#9cc0e6';ctx.lineWidth=1;ctx.stroke();
+      if(!nt){const a=P(cx,cy,u0,(v0+v1)/2),b=P(cx,cy,u1,(v0+v1)/2);ctx.strokeStyle='rgba(190,220,255,.6)';ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);ctx.stroke()}ctx.restore()}}
+  else if(k===NUKE){box(cx-9,cy+3,.4,16,'#c9cfd4');ctx.fillStyle='#d9dee2';ctx.beginPath();ctx.ellipse(cx-9,cy-13,9,7,0,Math.PI,2*Math.PI);ctx.fill();
+    const tx=cx+8,ty=cy-2;ctx.fillStyle='#b7c0c7';ctx.beginPath();ctx.moveTo(tx-12,ty);ctx.quadraticCurveTo(tx-5,ty-22,tx-8,ty-40);ctx.lineTo(tx+8,ty-40);ctx.quadraticCurveTo(tx+5,ty-22,tx+12,ty);ctx.closePath();ctx.fill();
+    ctx.fillStyle='#98a3ab';ctx.beginPath();ctx.moveTo(tx,ty);ctx.quadraticCurveTo(tx+5,ty-22,tx+8,ty-40);ctx.lineTo(tx+8,ty-40);ctx.quadraticCurveTo(tx+5,ty-22,tx+12,ty);ctx.closePath();ctx.fill();
+    ctx.fillStyle='#e3e8ec';ctx.beginPath();ctx.ellipse(tx,ty-40,8,3,0,0,7);ctx.fill();
+    if(powered[i]||true)for(let q=0;q<4;q++){const p=(((t*0.25+q/4+h)%1)+1)%1;ctx.fillStyle=`rgba(245,245,245,${0.6*(1-p)})`;ctx.beginPath();ctx.arc(tx+p*8,ty-44-p*30,4+p*10,0,7);ctx.fill()}}
   else if(k===HOSP){box(cx,cy,.76,29,'#eef0f0');windows(cx,cy,.76,29,4,'rgba(110,160,190,.7)');const ty=cy-29;ctx.strokeStyle='#d33';ctx.lineWidth=3.2;ctx.beginPath();ctx.moveTo(cx-9,ty-4.5);ctx.lineTo(cx+9,ty+4.5);ctx.moveTo(cx+9,ty-4.5);ctx.lineTo(cx-9,ty+4.5);ctx.stroke()}
   if(burning){const bh=bHeight(i);for(let f=0;f<5;f++){const a=hash(x,y,f+40),fl=Math.sin(t*12+f*2)*4;
     ctx.fillStyle=f%2?'rgba(255,170,30,.9)':'rgba(240,80,20,.9)';const fx=cx-14+a*28,fy=cy-bh*0.5+a*6;
@@ -1047,7 +1127,7 @@ function ovColor(i){
   if(overlay==='land'){if(S.terrain[i]===WATER)return null;const v=land[i]/100;return `hsla(${v*120},75%,45%,.5)`}
   return null}
 
-let gesture=null, hover=null;
+let gesture=null, hover=null, nightA=0;
 function render(now){
   const t=now/1000;
   ctx.setTransform(dpr,0,0,dpr,0,0);
@@ -1082,11 +1162,16 @@ function render(now){
     ctx.fillStyle=ok?(T0.id==='bull'?'rgba(220,60,40,.35)':'rgba(255,255,255,.35)'):'rgba(200,40,40,.25)';dia(cx,cy,1);ctx.fill();
     ctx.strokeStyle=ok?(T0.id==='bull'?'#e04a30':'#fff'):'rgba(220,60,40,.8)';ctx.lineWidth=1.6;ctx.stroke()}}
   let objErr=null;for(let j=0;j<vis.length;j+=4){try{drawObject(vis[j],vis[j+1],vis[j+2],vis[j+3],t)}catch(e){objErr=e;ctx.setLineDash([])}}
+  {const tg=isNight()?1:0;nightA+=(tg-nightA)*0.06;if(nightA<0.01&&tg===0)nightA=0}
+  if(nightA>0){ctx.fillStyle=`rgba(12,22,52,${(0.42*nightA).toFixed(3)})`;ctx.fillRect(cam.x-W/2/z-200,cam.y-H/2/z-300,W/z+400,H/z+600);
+    ctx.fillStyle=`rgba(255,214,120,${(0.85*nightA).toFixed(3)})`;
+    for(let j=0;j<vis.length;j+=4){const i=vis[j+1]*N+vis[j];if(!isBuilding(i)||!powered[i]||S.kind[i]===SOLAR)continue;const bh=bHeight(i),cx=vis[j+2],cy=vis[j+3];
+      for(let q=0;q<3;q++){const a=hash(vis[j],vis[j+1],q+90);if(a<0.35)continue;ctx.fillRect(cx-12+a*22,cy-bh*(0.25+((a*7)%1)*0.6),2.2,2.2)}}}
   if(S.showProbs!==false){for(let j=0;j<vis.length;j+=4){const i=vis[j+1]*N+vis[j],pr=problemsAt(i);if(pr)try{drawProblems(i,pr,vis[j+2],vis[j+3],t)}catch(e){objErr=e}}}
   if(objErr)reportErr('épület rajzolása',objErr);
   const ring=(i,R,col,dash)=>{const x=i%N,y=(i/N)|0;ctx.strokeStyle=col;ctx.lineWidth=2/z;ctx.setLineDash(dash?[8/z,6/z]:[]);ctx.beginPath();ctx.ellipse((x-y)*HW,(x+y)*HH,(R+.5)*HW*1.414,(R+.5)*HH*1.414,0,0,7);ctx.stroke();ctx.setLineDash([])};
-  if(COVOV[overlay]){const kk=COVOV[overlay][0];for(let i=0;i<NN;i++)if(S.kind[i]===kk)ring(i,RAD[kk],`rgba(${COVOV[overlay][1]},.9)`,true)}
-  if(hover&&!gesture&&RAD[T0.kind]&&T0.mode==='single')ring(hover.y*N+hover.x,RAD[T0.kind],'rgba(255,255,255,.95)',false);
+  if(COVOV[overlay]){const kk=COVOV[overlay][0];for(let i=0;i<NN;i++)if(S.kind[i]===kk)ring(i,radOf(kk),`rgba(${COVOV[overlay][1]},.9)`,true)}
+  if(hover&&!gesture&&RAD[T0.kind]&&T0.mode==='single')ring(hover.y*N+hover.x,radOf(T0.kind),'rgba(255,255,255,.95)',false);
   for(let f=fx.length-1;f>=0;f--){const e=fx[f],p=(now-e.start)/e.dur;if(p>=1||p<0){fx.splice(f,1);continue}
     if(e.type==='flood'){ctx.fillStyle=`rgba(60,130,200,${0.6*(1-p)})`;for(const i of e.tiles){const x=i%N,y=(i/N)|0;dia((x-y)*HW,(x+y)*HH,1.03);ctx.fill()}}
     else if(e.type==='tornado'){const fp=p*(e.path.length-1),a=Math.floor(fp),b=Math.min(e.path.length-1,a+1),u=fp-a,ia=e.path[a],ib=e.path[b];
@@ -1185,6 +1270,9 @@ function showPanel(on){panel.hidden=!on;hallBtn.setAttribute('aria-pressed',on)}
 hallBtn.onclick=()=>showPanel(panel.hidden);
 showPanel(window.innerWidth>760);
 $('homeBtn').onclick=()=>centerCam();
+$('techList').addEventListener('click',e=>{const b=e.target.closest('button[data-tech]');if(!b)return;S.research.cur=b.dataset.tech;
+  const R=S.research,tc=TECH[R.cur];if(R.pts>=tc.cost)researchMonth(0);else{renderResearch();pushMsg(`Kutatás indult: ${tc.name}.`)}});
+$('resBudget').oninput=e=>{S.research.budget=+e.target.value;renderResearch()};
 let probIdx=-1,probList=[];
 function refreshProbs(){probList=[];let pw=0,wt=0,rd=0;for(let i=0;i<NN;i++){const p=problemsAt(i);if(p){probList.push(i);if(p.includes('p'))pw++;if(p.includes('w'))wt++;if(p.includes('r'))rd++}}
   const b=$('probBtn');b.hidden=!probList.length;b.textContent=`Hibák: ${probList.length}`;
@@ -1204,7 +1292,7 @@ function showGameOver(){const el=$('gameover');if(!S.over){el.hidden=true;return
   $('goText').textContent=`${S.name} kasszája ${1950+Math.floor(o.month/12)}. ${MONTHS[o.month%12]} hónapban kiürült, és a bank már nem adott több hitelt, mert ${LOAN.max} hitel futott egyszerre. A város ${yrs} évig állt fenn, a végén ${fmtN(o.pop)} lakossal. Ezt a játékot elvesztetted.`;
   el.hidden=false}
 function hud(){
-  $('sDate').textContent=`${1950+Math.floor(S.month/12)}. ${MONTHS[S.month%12]}`;
+  $('sDate').textContent=`${1950+Math.floor(S.month/12)}. ${MONTHS[S.month%12]}`;$('sPhase').textContent=isNight()?'☾ éjszaka':'☀ nappal';
   const m=$('sMoney');m.textContent=fmtN(S.money)+' Ft';m.classList.toggle('neg',S.money<0);
   $('sPop').textContent=fmtN(T.pop);
   const bal=(id,cap,need,unit)=>{const b=Math.round(cap-need),e=$(id);e.textContent=(b>0?'+':b<0?'−':'±')+fmtN(Math.abs(b))+(unit?' '+unit:'');
@@ -1235,7 +1323,7 @@ function hud(){
   $('pDebt').textContent=fmtN(S.loans.reduce((a,l)=>a+l.left*(l.pay||LOAN.pay),0))+' Ft';$('pPay').textContent=fmtN(S.loans.reduce((a,l)=>a+(l.pay||LOAN.pay),0))+' Ft/hó';
   $('loanBtn').disabled=S.loans.length>=LOAN.max||!!S.over;
   refreshProbs();
-  TOOLS.forEach(t=>{if(t.rank){const b=$('tool-'+t.id);if(b)b.classList.toggle('locked',S.rank<t.rank)}});
+  TOOLS.forEach(t=>{if(t.rank||t.tech){const b=$('tool-'+t.id);if(b)b.classList.toggle('locked',(t.rank&&S.rank<t.rank)||(t.tech&&!has(t.tech)))}});
   if(inspected!=null)inspect(inspected,true);
 }
 function dateStr(){return `${1950+Math.floor(S.month/12)}. ${MONTHS[S.month%12]}`}
@@ -1260,17 +1348,17 @@ function inspect(i,refresh){
   if(conductor(k)&&k!==ROAD&&k!==LINE&&k!==PARK)rows+=`<div class="row"><span>Áram</span>${powered[i]?'<span class="pill ok">van</span>':'<span class="pill no">nincs</span>'}</div>`;
   if(wcons(i))rows+=`<div class="row"><span>Víz</span>${watered[i]?'<span class="pill ok">van</span>':'<span class="pill no">nincs</span>'}</div>`;
   if(SJOB[k])rows+=`<div class="row"><span>Munkahelyek</span><span class="v">${SJOB[k]}</span></div>`;
-  if(k===PUMP)rows+=`<div class="row"><span>Vízhozam</span><span class="v">${powered[i]?(waterNear[i]?WCAP_NEAR:WCAP_FAR):0}</span></div>`;
-  if(k===TREAT)rows+=`<div class="row"><span>Tisztítás</span><span class="v">${powered[i]?TREATCAP:0}</span></div>`;
+  if(k===PUMP)rows+=`<div class="row"><span>Vízhozam</span><span class="v">${powered[i]?(waterNear[i]?WCAP_NEAR:wcapFar()):0}</span></div>`;
+  if(k===TREAT)rows+=`<div class="row"><span>Tisztítás</span><span class="v">${powered[i]?treatCap():0}</span></div>`;
   if(S.pipe[i])rows+=`<div class="row"><span>Föld alatt</span><span class="v">vízcső</span></div>`;
   if(isZone(k)&&S.dens[i]<=1&&access[i]&&powered[i]&&!watered[i])rows+=`<div class="sub" style="text-transform:none;letter-spacing:0">Víz nélkül nem nő az 1. szint fölé.</div>`;
   if(k===RZ&&S.dens[i])rows+=meter('Elégedettség',sat[i],'#d6a23d');
   if(k===IZ&&S.dens[i]&&hiTech(i))rows+=`<div class="row"><span>Típus</span><span class="pill ok">high-tech ipar</span></div>`;
-  if(RAD[k])rows+=`<div class="row"><span>Hatósugár</span><span class="v">${RAD[k]} mező</span></div>`;
+  if(RAD[k])rows+=`<div class="row"><span>Hatósugár</span><span class="v">${radOf(k)} mező</span></div>`;
   if(k===TOWER)rows+=meter('Tárolt víz',T.watStockCap?(S.watStock||0)/T.watStockCap*100:0,'#3a86d0')+`<div class="row"><span>Városi készlet</span><span class="v">${fmtN(S.watStock||0)} / ${fmtN(T.watStockCap||0)}</span></div>`;
   if(k===LANDFILL)rows+=meter('Telítettség',T.lfCap?(S.lfStock||0)/T.lfCap*100:0,'#8a6a3a')+`<div class="row"><span>Lerakók összesen</span><span class="v">${fmtN(S.lfStock||0)} / ${fmtN(T.lfCap||0)}</span></div>`;
-  if(GCAP[k])rows+=`<div class="row"><span>Szemétkapacitás</span><span class="v">${GCAP[k]} / hó</span></div>`;
-  if(CAP[k])rows+=`<div class="row"><span>Teljesítmény</span><span class="v">${CAP[k]} MW</span></div>`;
+  if(GCAP[k])rows+=`<div class="row"><span>Szemétkapacitás</span><span class="v">${gcapOf(k)} / hó</span></div>`;
+  if(CAP[k])rows+=`<div class="row"><span>Teljesítmény</span><span class="v">${capOf(i)} MW${k===SOLAR?(isNight()?' (éjszaka)':' (nappal)'):''}</span></div>`;
   if(UPKEEP[k])rows+=`<div class="row"><span>Fenntartás</span><span class="v">${UPKEEP[k]} Ft/hó</span></div>`;
   if(S.build[i])rows+=`<div class="row"><span>Állapot</span><span class="pill no">épül, még ${S.build[i]} hónap</span></div>`;
   if(S.burn[i])rows+=`<div class="row"><span>Állapot</span><span class="pill no">ég!</span></div>`;
@@ -1378,7 +1466,7 @@ $('mpCopy').onclick=async()=>{const inp=$('mpLink');try{await navigator.clipboar
 window.addEventListener('hashchange',()=>{const mm=location.hash.match(/^#join-([a-z0-9]{4,12})$/i);if(mm){try{history.replaceState(null,'',location.pathname+location.search)}catch(e){}selectTab('settings');mpJoin(mm[1],false)}});
 
 /* ---------- mentés ---------- */
-function serialize(){return{over:S.over||null,showProbs:S.showProbs!==false,v:1,seed:S.seed,name:S.name,money:S.money,month:S.month,tax:S.tax,speed:S.speed,rank:S.rank,lastInc:S.lastInc,lastExp:S.lastExp,
+function serialize(){return{research:JSON.parse(JSON.stringify(S.research||{})),over:S.over||null,showProbs:S.showProbs!==false,v:1,seed:S.seed,name:S.name,money:S.money,month:S.month,tax:S.tax,speed:S.speed,rank:S.rank,lastInc:S.lastInc,lastExp:S.lastExp,
   terrain:Array.from(S.terrain),kind:Array.from(S.kind),dens:Array.from(S.dens),burn:Array.from(S.burn),build:Array.from(S.build),pipe:Array.from(S.pipe),trade:{...S.trade},lastTrade:S.lastTrade,taxR:S.taxR,taxC:S.taxC,taxI:S.taxI,loans:S.loans.map(l=>({...l})),mission:S.mission,disasters:S.disasters,gExport:S.gExport,mpRoom:S.mpRoom||null,watStock:S.watStock||0,lfStock:S.lfStock||0,lfWarn:S.lfWarn||0,market:JSON.parse(JSON.stringify(S.market)),lastLoan:S.lastLoan,hiTechMsg:S.hiTechMsg,cam:{x:cam.x,y:cam.y,z:cam.z},news:news.slice()}}
 function load(d){if(!d||d.v!==1||!d.kind||d.kind.length!==NN)return false;
   S={...d,terrain:Uint8Array.from(d.terrain),kind:Uint8Array.from(d.kind),dens:Uint8Array.from(d.dens),burn:Uint8Array.from(d.burn),build:d.build&&d.build.length===NN?Uint8Array.from(d.build):new Uint8Array(NN),
