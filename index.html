@@ -64,6 +64,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 .stat.util{cursor:help}
 .tbtop{display:flex;align-items:center;gap:10px}
 .tbtop #hint{flex:1;min-width:0}
+.probbtn{border-color:var(--danger)!important;color:var(--danger)}
 .homebtn{flex:0 0 auto;border:1px solid var(--line);background:var(--panel-2);border-radius:8px;padding:6px 10px;font-size:12.5px;font-weight:600;cursor:pointer}
 .speed{flex:0 0 auto;display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
 .speed button{border:0;background:transparent;padding:7px 10px;font-family:var(--font-num);font-size:12.5px;font-weight:600;cursor:pointer;min-width:38px}
@@ -109,6 +110,12 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 .btns button.armed{background:var(--danger);border-color:var(--danger);color:#fff}
 
 /* infó kártya */
+#gameover{position:absolute;inset:0;z-index:20;display:grid;place-items:center;background:rgba(10,16,20,.62);padding:16px}
+.gocard{background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);max-width:400px;width:100%;padding:22px 22px 18px;display:flex;flex-direction:column;gap:10px}
+.gocard h2{margin:0;font-size:22px;font-weight:800;text-wrap:balance}
+.gocard p{margin:0;color:var(--muted);line-height:1.45}
+.gotag{align-self:flex-start;background:var(--danger);color:#fff;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:3px 8px;border-radius:4px}
+.gonew{background:var(--accent)!important;border-color:var(--accent)!important;color:var(--accent-ink)}
 #info{position:absolute;left:max(12px, env(safe-area-inset-left, 0px));bottom:12px;width:260px;background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);padding:12px 14px;z-index:4;display:flex;flex-direction:column;gap:6px}
 #info h3{margin:0;font-size:16px;font-weight:800;display:flex;justify-content:space-between;align-items:center;gap:8px}
 #info h3 button{border:0;background:transparent;font-size:18px;line-height:1;cursor:pointer;color:var(--muted);padding:2px 6px}
@@ -313,6 +320,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
       <section data-tab="settings" hidden>
         <h2>Katasztrófák</h2>
         <label class="check"><input type="checkbox" id="disToggle" checked> Véletlen katasztrófák: tűz, árvíz, tornádó, földrengés</label>
+        <label class="check"><input type="checkbox" id="probToggle" checked> Hibajelzők az épületek fölött (áram, víz, út)</label>
         <div class="note">Kipróbálásra azonnal is indíthatsz egyet:</div>
         <div class="seg" id="disBtns"><button data-d="fire">Tűz</button><button data-d="flood">Árvíz</button><button data-d="tornado">Tornádó</button><button data-d="quake">Földrengés</button></div>
       </section>
@@ -326,11 +334,20 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
     </aside>
 
     <div id="info" hidden></div>
+    <div id="gameover" hidden role="dialog" aria-modal="true" aria-labelledby="goTitle">
+      <div class="gocard">
+        <div class="gotag">Csőd</div>
+        <h2 id="goTitle">Csődbe ment a város</h2>
+        <p id="goText"></p>
+        <div class="btns"><button id="goNew" class="gonew">Új város kezdése</button></div>
+      </div>
+    </div>
   </main>
 
   <footer class="toolbar">
     <div class="tbtop">
       <div id="hint"></div>
+      <button class="homebtn probbtn" id="probBtn" title="A következő hibás épülethez ugrik" hidden>Hibák: 0</button>
       <button class="homebtn" id="homeBtn" title="A térképet középre teszi">Középre</button>
       <div class="speed" role="group" aria-label="Sebesség">
         <button id="sp0" data-speed="0" aria-pressed="false" title="Szünet (szóköz)">II</button>
@@ -362,11 +379,16 @@ Object.assign(UPKEEP,{16:10,17:35,18:40,19:1,20:60,21:120,22:100});
 CAP[INCIN]=40;
 Object.assign(SJOB,{16:6,17:12,18:15,20:25,21:40,22:40});
 const GCAP={16:80,17:150,18:60};
-const LOAN={amount:10000,months:60,pay:190,max:3};
+const LOAN={amount:10000,months:60,pay:190,max:3,autoPay:230};
 const HITECH_MONTH=240;
 const BUILD={6:6,7:2,8:3,9:3,10:4,11:6,14:3,15:4,16:1,17:5,18:4,19:1,20:6,21:12,22:10};
 const TOWER=23, TOWERCAP=600, LF_SIZE=3000;
 KN[TOWER]='Víztorony';UPKEEP[TOWER]=8;BUILD[TOWER]=2;SJOB[TOWER]=2;
+function problemsAt(i){const k=S.kind[i];if(!k||S.burn[i]||S.build[i])return '';let p='';
+  if(cons(i)>0&&!powered[i])p+='p';
+  if(wcons(i)>0&&!watered[i]&&T.wSupply>0)p+='w';
+  if(isZone(k)&&!access[i])p+='r';
+  return p}
 const builtAny=k=>{for(let i=0;i<NN;i++)if(S.kind[i]===k&&!S.build[i])return true;return false};
 const RAD={8:9,9:9,10:8,11:10,12:3,19:5,20:12,22:15};
 const COVOV={cpol:[POLICE,'59,91,168'],cfire:[FIRE,'200,60,48'],chosp:[HOSP,'214,60,110'],cedu:[SCHOOL,'200,140,30']};
@@ -482,7 +504,7 @@ function afterLoad(){
   document.getElementById('cityName').value=S.name;
   setSpeed(S.speed??1);syncTrade();
   if(S.cam&&isFinite(S.cam.x)&&isFinite(S.cam.y)&&isFinite(S.cam.z)&&S.cam.z>0){cam.x=S.cam.x;cam.y=S.cam.y;cam.z=S.cam.z;clampCam()}else centerCam();
-  hud();renderNews();updateAdvisors(false);renderMission();
+  hud();renderNews();updateAdvisors(false);renderMission();showGameOver();
 }
 
 /* ---------- szimuláció ---------- */
@@ -647,10 +669,13 @@ function simMonth(){
   recompute();totals();
   const sales=T.powSell*price('pow','s')+T.watSell*price('wat','s')+T.gImport*price('garb','s'), buys=T.powBuy*price('pow','b')+T.watBuy*price('wat','b')+T.gExport*price('garb','b');
   const inc=Math.round(S.taxR*(T.pop*0.06+T.jobsS*0.02)+S.taxC*T.jobsC*0.05+S.taxI*T.jobsI*0.05+sales);
-  let loanPay=0;S.loans=S.loans.filter(l=>{loanPay+=LOAN.pay;l.left--;return l.left>0});
+  let loanPay=0;S.loans=S.loans.filter(l=>{loanPay+=l.pay||LOAN.pay;l.left--;return l.left>0});
   if(loanPay&&!S.loans.length)pushMsg('Az utolsó hitelt is visszafizetted.','good');
   let exp=buys+loanPay;for(let i=0;i<NN;i++){exp+=UPKEEP[S.kind[i]]||0;if(S.pipe[i])exp+=0.2}exp=Math.round(exp);
-  S.money+=inc-exp;S.lastInc=inc;S.lastExp=exp;S.lastTrade=Math.round(sales-buys);S.lastLoan=loanPay;
+  S.money+=inc-exp;S.lastInc=inc;S.lastExp=exp;
+  while(S.money<0&&S.loans.length<LOAN.max){S.loans.push({left:LOAN.months,pay:LOAN.autoPay,auto:1});S.money+=LOAN.amount;
+    pushMsg(`Kiürült a kassza, ezért a bank kényszerhitelt adott: +${fmtN(LOAN.amount)} Ft, de drágábban: ${LOAN.autoPay} Ft/hó, ${LOAN.months} hónapig. Még ${LOAN.max-S.loans.length} hitel fér bele.`,'warn')}
+  if(S.money<0&&!S.over){S.over={month:S.month,pop:T.pop,money:S.money};}S.lastTrade=Math.round(sales-buys);S.lastLoan=loanPay;
   S.watStock=Math.round(T.watStockAfter||0);S.lfStock=Math.round(T.lfAfter||0);dirty=true;
   if(T.lfCap&&S.lfStock>=T.lfCap*0.9&&!S.lfWarn){S.lfWarn=1;pushMsg(S.lfStock>=T.lfCap?'Megtelt a hulladéklerakó! Nem fogad több szemetet. Építs újat, vagy szemétégetőt, ami apasztja.':'A hulladéklerakó 90%-ig megtelt.','warn')}
   if(T.lfCap&&S.lfStock<T.lfCap*0.8)S.lfWarn=0;
@@ -666,6 +691,7 @@ function simMonth(){
   if(!S.hiTechMsg&&S.month>=HITECH_MONTH){for(let i=0;i<NN;i++)if(S.dens[i]&&hiTech(i)){S.hiTechMsg=1;pushMsg('Megjelent a high-tech ipar: az iskolák közelében tiszta, modern gyárak épülnek.','good');break}}
   if(S.month===HITECH_MONTH-12)pushMsg('Tóth Gergő (városfejlesztés): 1970-től az iskolák közelében high-tech ipar jelenhet meg, ami alig szennyez.');
   if(S.disasters&&S.month>=36&&Math.random()<0.005)disaster(['flood','tornado','quake'][Math.floor(Math.random()*3)]);
+  if(S.over){showGameOver();save(true);pushMsg('Csődbe ment a város. Vége a játéknak.','warn');return}
   updateAdvisors(S.month%6===0);
   mpWrite(false);
   if(S.month%12===0)save(true);
@@ -679,7 +705,8 @@ const ADV=[
   {id:'dev',who:'Tóth Gergő',role:'Városfejlesztés'}];
 function advisorSays(){
   const o={},net=S.lastInc-S.lastExp,pct=v=>Math.round(v*100)+'%';
-  o.fin=S.money<0?[2,'Mínuszban a kassza! Emeld az adókat, vagy vegyél fel hitelt a Pénzügy fülön.']
+  o.fin=S.loans.length>=LOAN.max&&net<0?[2,'Elfogyott a hitelkeret, és a költségvetés hiányos. Ha kiürül a kassza, csődbe megy a város! Emelj adót, vagy csökkentsd a kiadásokat.']
+    :S.money<0?[2,'Mínuszban a kassza! Emeld az adókat, vagy vegyél fel hitelt a Pénzügy fülön.']
     :net<0&&S.money<3000?[2,`Havonta ${fmtN(-net)} Ft-tal fogy a pénz, hamarosan kiürül a kassza.`]
     :net<0?[1,`A költségvetés havi ${fmtN(-net)} Ft hiánnyal fut. Emelj adót, vagy spórolj a fenntartáson.`]
     :Math.max(S.taxR,S.taxC,S.taxI)>13?[1,'Magasak az adók, ez visszafogja a betelepülést.']
@@ -810,6 +837,7 @@ function costAt(t,i){
 }
 let moneyWarnAt=0;
 function applyTiles(t,list){
+  if(S.over)return;
   if(t.rank&&S.rank<t.rank){pushMsg(`${t.name}: ${TITLES[t.rank][1]} rangtól építhető (${fmtN(TITLES[t.rank][0])} lakos).`,'warn');return}
   if(t.unique&&S.kind.includes(t.kind)){pushMsg(`Csak egy ${t.name.toLowerCase()} lehet a városban.`,'warn');return}
   let spent=0,n=0,blocked=false;
@@ -995,10 +1023,19 @@ function drawObject(x,y,cx,cy,t){
     ctx.fillStyle=f%2?'rgba(255,170,30,.9)':'rgba(240,80,20,.9)';const fx=cx-14+a*28,fy=cy-bh*0.5+a*6;
     ctx.beginPath();ctx.moveTo(fx-5,fy);ctx.quadraticCurveTo(fx,fy-14-fl-bh*.3,fx+5,fy);ctx.fill()}
     smoke(cx,cy-bh-10,t,h,true)}
-  else if(cons(i)>0&&!powered[i]&&(t%1.2)<.7){const by=cy-bHeight(i)-16;ctx.fillStyle='#ffd21f';ctx.strokeStyle='#2a2a2a';ctx.lineWidth=1.2;
-    ctx.beginPath();ctx.moveTo(cx+2,by-9);ctx.lineTo(cx-5,by+1);ctx.lineTo(cx,by+1);ctx.lineTo(cx-2,by+9);ctx.lineTo(cx+5,by-1);ctx.lineTo(cx,by-1);ctx.closePath();ctx.fill();ctx.stroke()}
 }
 
+function drawProblems(i,pr,cx,cy,t){
+  const sc=1/Math.max(0.55,Math.min(1,cam.z)),r=7*sc,gap=17*sc,n=pr.length;
+  const y=cy-bHeight(i)-(S.kind[i]&&isZone(S.kind[i])&&!S.dens[i]?6:14)*sc-r+Math.sin(t*3+i)*1.5;
+  for(let k=0;k<n;k++){const x=cx+(k-(n-1)/2)*gap,c=pr[k];
+    ctx.fillStyle=c==='p'?'#ffd21f':c==='w'?'#2f86e0':'#e8e2d6';ctx.strokeStyle='rgba(20,20,20,.75)';ctx.lineWidth=1.3*sc;
+    ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.fill();ctx.stroke();
+    if(c==='p'){ctx.fillStyle='#222';ctx.beginPath();ctx.moveTo(x+1.5*sc,y-5*sc);ctx.lineTo(x-3*sc,y+0.8*sc);ctx.lineTo(x,y+0.8*sc);ctx.lineTo(x-1.5*sc,y+5*sc);ctx.lineTo(x+3*sc,y-0.8*sc);ctx.lineTo(x,y-0.8*sc);ctx.closePath();ctx.fill()}
+    else if(c==='w'){ctx.fillStyle='#fff';ctx.beginPath();ctx.moveTo(x,y-5*sc);ctx.quadraticCurveTo(x+4*sc,y,x+3.2*sc,y+2*sc);ctx.arc(x,y+1.8*sc,3.2*sc,0,Math.PI);ctx.quadraticCurveTo(x-4*sc,y,x,y-5*sc);ctx.fill()}
+    else{ctx.fillStyle='#55595f';ctx.beginPath();ctx.moveTo(x-1.8*sc,y-4.5*sc);ctx.lineTo(x+1.8*sc,y-4.5*sc);ctx.lineTo(x+3.6*sc,y+4.5*sc);ctx.lineTo(x-3.6*sc,y+4.5*sc);ctx.closePath();ctx.fill();
+      ctx.strokeStyle='#fff';ctx.lineWidth=1*sc;ctx.setLineDash([1.6*sc,1.6*sc]);ctx.beginPath();ctx.moveTo(x,y-4*sc);ctx.lineTo(x,y+4*sc);ctx.stroke();ctx.setLineDash([]);
+      ctx.strokeStyle='#d33';ctx.lineWidth=1.6*sc;ctx.beginPath();ctx.moveTo(x-r*.7,y-r*.7);ctx.lineTo(x+r*.7,y+r*.7);ctx.stroke()}}}
 function ovColor(i){
   if(overlay==='power'){const c=cons(i);if(!conductor(S.kind[i]))return null;if(c&&!powered[i])return 'rgba(230,50,40,.55)';return powered[i]?'rgba(255,215,40,.45)':'rgba(120,120,120,.4)'}
   if(overlay==='pollution'){const v=pol[i]/70;return v>0.03?`rgba(110,70,20,${Math.min(.8,v)})`:null}
@@ -1045,6 +1082,7 @@ function render(now){
     ctx.fillStyle=ok?(T0.id==='bull'?'rgba(220,60,40,.35)':'rgba(255,255,255,.35)'):'rgba(200,40,40,.25)';dia(cx,cy,1);ctx.fill();
     ctx.strokeStyle=ok?(T0.id==='bull'?'#e04a30':'#fff'):'rgba(220,60,40,.8)';ctx.lineWidth=1.6;ctx.stroke()}}
   let objErr=null;for(let j=0;j<vis.length;j+=4){try{drawObject(vis[j],vis[j+1],vis[j+2],vis[j+3],t)}catch(e){objErr=e;ctx.setLineDash([])}}
+  if(S.showProbs!==false){for(let j=0;j<vis.length;j+=4){const i=vis[j+1]*N+vis[j],pr=problemsAt(i);if(pr)try{drawProblems(i,pr,vis[j+2],vis[j+3],t)}catch(e){objErr=e}}}
   if(objErr)reportErr('épület rajzolása',objErr);
   const ring=(i,R,col,dash)=>{const x=i%N,y=(i/N)|0;ctx.strokeStyle=col;ctx.lineWidth=2/z;ctx.setLineDash(dash?[8/z,6/z]:[]);ctx.beginPath();ctx.ellipse((x-y)*HW,(x+y)*HH,(R+.5)*HW*1.414,(R+.5)*HH*1.414,0,0,7);ctx.stroke();ctx.setLineDash([])};
   if(COVOV[overlay]){const kk=COVOV[overlay][0];for(let i=0;i<NN;i++)if(S.kind[i]===kk)ring(i,RAD[kk],`rgba(${COVOV[overlay][1]},.9)`,true)}
@@ -1127,16 +1165,17 @@ function selectTool(id){tool=id;document.querySelectorAll('.tool').forEach(b=>b.
   if(TOOLOV[id]){if(overlay!==TOOLOV[id]){setOverlay(TOOLOV[id]);autoOv=true}}
   else if(autoOv&&id!=='bull'){setOverlay('none');autoOv=false}
   setHint(id==='bull'&&overlay==='water'?'<b>Bontás</b> — Víz nézetben a föld alatti csöveket bontod (3 Ft/mező).':undefined)}
-function syncTrade(){$('disToggle').checked=!!S.disasters;for(const [seg,key] of [['segPow','pow'],['segWat','wat'],['segGarb','garb']])document.querySelectorAll('#'+seg+' button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.m===S.trade[key]))}
+function syncTrade(){$('probToggle').checked=S.showProbs!==false;$('disToggle').checked=!!S.disasters;for(const [seg,key] of [['segPow','pow'],['segWat','wat'],['segGarb','garb']])document.querySelectorAll('#'+seg+' button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.m===S.trade[key]))}
 for(const [seg,key] of [['segPow','pow'],['segWat','wat'],['segGarb','garb']])document.querySelectorAll('#'+seg+' button').forEach(b=>b.onclick=()=>{S.trade[key]=b.dataset.m;syncTrade();recompute();totals();hud()});
 let lastSpeed=1;
-function setSpeed(s){if(!S)return;if(S.speed)lastSpeed=S.speed;S.speed=s;document.querySelectorAll('.speed button').forEach(b=>b.setAttribute('aria-pressed',+b.dataset.speed===s))}
+function setSpeed(s){if(!S)return;if(S.over)s=0;if(S.speed)lastSpeed=S.speed;S.speed=s;document.querySelectorAll('.speed button').forEach(b=>b.setAttribute('aria-pressed',+b.dataset.speed===s))}
 document.querySelectorAll('.speed button').forEach(b=>b.onclick=()=>setSpeed(+b.dataset.speed));
 for(const z of ['R','C','I'])$('tax'+z).oninput=e=>{S['tax'+z]=+e.target.value;$('taxOut'+z).textContent=S['tax'+z]+'%';totals();hud()};
 document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{const tab=b.dataset.tab;document.querySelectorAll('.tabs button').forEach(x=>x.setAttribute('aria-pressed',x===b));
   document.querySelectorAll('#panel section[data-tab]').forEach(sc=>sc.hidden=sc.dataset.tab!==tab)});
-$('loanBtn').onclick=()=>{if(S.loans.length>=LOAN.max)return;S.loans.push({left:LOAN.months});S.money+=LOAN.amount;
+$('loanBtn').onclick=()=>{if(S.loans.length>=LOAN.max)return;S.loans.push({left:LOAN.months,pay:LOAN.pay});S.money+=LOAN.amount;
   pushMsg(`Felvettél ${fmtN(LOAN.amount)} Ft hitelt. Törlesztés: ${LOAN.pay} Ft/hó, ${LOAN.months} hónapig.`);hud()};
+$('probToggle').onchange=e=>{S.showProbs=e.target.checked};
 $('disToggle').onchange=e=>{S.disasters=e.target.checked;pushMsg(S.disasters?'Katasztrófák bekapcsolva.':'Katasztrófák kikapcsolva: nem lesz tűz, árvíz, tornádó és földrengés.')};
 document.querySelectorAll('#disBtns button').forEach(b=>b.onclick=()=>disaster(b.dataset.d));
 $('cityName').onchange=e=>{S.name=e.target.value.trim()||'Újfalu';e.target.value=S.name};
@@ -1146,12 +1185,24 @@ function showPanel(on){panel.hidden=!on;hallBtn.setAttribute('aria-pressed',on)}
 hallBtn.onclick=()=>showPanel(panel.hidden);
 showPanel(window.innerWidth>760);
 $('homeBtn').onclick=()=>centerCam();
+let probIdx=-1,probList=[];
+function refreshProbs(){probList=[];let pw=0,wt=0,rd=0;for(let i=0;i<NN;i++){const p=problemsAt(i);if(p){probList.push(i);if(p.includes('p'))pw++;if(p.includes('w'))wt++;if(p.includes('r'))rd++}}
+  const b=$('probBtn');b.hidden=!probList.length;b.textContent=`Hibák: ${probList.length}`;
+  b.title=`Áram nélkül: ${pw} · víz nélkül: ${wt} · út nélkül: ${rd}. Kattints, és a következőhöz ugrik.`}
+$('probBtn').onclick=()=>{refreshProbs();if(!probList.length)return;probIdx=(probIdx+1)%probList.length;const i=probList[probIdx];focusTile(i);inspect(i);
+  const p=problemsAt(i),w=[];if(p.includes('p'))w.push('nincs áram');if(p.includes('w'))w.push('nincs víz');if(p.includes('r'))w.push('nem éri el az utat (3 mezőn belül kell)');
+  setHint(`<b>${probIdx+1}. / ${probList.length} hiba</b> · ${KN[S.kind[i]]}: ${w.join(', ')}`)};
+$('goNew').onclick=()=>{const room=S.mpRoom;newGame();S.mpRoom=room;showGameOver();setSpeed(1);save(true)};
 $('saveBtn').onclick=()=>{save(false)};
 let armTimer=0;
 $('newBtn').onclick=e=>{const b=e.currentTarget;
   if(!b.classList.contains('armed')){b.classList.add('armed');b.textContent='Biztosan? Kattints újra';clearTimeout(armTimer);armTimer=setTimeout(()=>{b.classList.remove('armed');b.textContent='Új város'},3500);return}
   clearTimeout(armTimer);b.classList.remove('armed');b.textContent='Új város';inspect(null);const room=S.mpRoom;newGame();S.mpRoom=room;mpWrite(true);};
 
+function showGameOver(){const el=$('gameover');if(!S.over){el.hidden=true;return}
+  setSpeed(0);const o=S.over,yrs=Math.floor(o.month/12);
+  $('goText').textContent=`${S.name} kasszája ${1950+Math.floor(o.month/12)}. ${MONTHS[o.month%12]} hónapban kiürült, és a bank már nem adott több hitelt, mert ${LOAN.max} hitel futott egyszerre. A város ${yrs} évig állt fenn, a végén ${fmtN(o.pop)} lakossal. Ezt a játékot elvesztetted.`;
+  el.hidden=false}
 function hud(){
   $('sDate').textContent=`${1950+Math.floor(S.month/12)}. ${MONTHS[S.month%12]}`;
   const m=$('sMoney');m.textContent=fmtN(S.money)+' Ft';m.classList.toggle('neg',S.money<0);
@@ -1181,8 +1232,9 @@ function hud(){
   for(const z of ['R','C','I']){if(document.activeElement!==$('tax'+z))$('tax'+z).value=S['tax'+z];$('taxOut'+z).textContent=S['tax'+z]+'%'}
   const se=$('sSat');se.textContent=Math.round(T.sat)+'%';se.classList.toggle('neg',T.sat<40);$('pSat').textContent=Math.round(T.sat)+'%';
   const pg=$('pGarb');pg.textContent=`${fmtN(T.garbage-T.gUncol)} / ${fmtN(T.garbage)}`;pg.style.color=T.gUncol>0?'var(--danger)':'';
-  $('pDebt').textContent=fmtN(S.loans.reduce((a,l)=>a+l.left*LOAN.pay,0))+' Ft';$('pPay').textContent=fmtN(S.loans.length*LOAN.pay)+' Ft/hó';
-  $('loanBtn').disabled=S.loans.length>=LOAN.max;
+  $('pDebt').textContent=fmtN(S.loans.reduce((a,l)=>a+l.left*(l.pay||LOAN.pay),0))+' Ft';$('pPay').textContent=fmtN(S.loans.reduce((a,l)=>a+(l.pay||LOAN.pay),0))+' Ft/hó';
+  $('loanBtn').disabled=S.loans.length>=LOAN.max||!!S.over;
+  refreshProbs();
   TOOLS.forEach(t=>{if(t.rank){const b=$('tool-'+t.id);if(b)b.classList.toggle('locked',S.rank<t.rank)}});
   if(inspected!=null)inspect(inspected,true);
 }
@@ -1326,7 +1378,7 @@ $('mpCopy').onclick=async()=>{const inp=$('mpLink');try{await navigator.clipboar
 window.addEventListener('hashchange',()=>{const mm=location.hash.match(/^#join-([a-z0-9]{4,12})$/i);if(mm){try{history.replaceState(null,'',location.pathname+location.search)}catch(e){}selectTab('settings');mpJoin(mm[1],false)}});
 
 /* ---------- mentés ---------- */
-function serialize(){return{v:1,seed:S.seed,name:S.name,money:S.money,month:S.month,tax:S.tax,speed:S.speed,rank:S.rank,lastInc:S.lastInc,lastExp:S.lastExp,
+function serialize(){return{over:S.over||null,showProbs:S.showProbs!==false,v:1,seed:S.seed,name:S.name,money:S.money,month:S.month,tax:S.tax,speed:S.speed,rank:S.rank,lastInc:S.lastInc,lastExp:S.lastExp,
   terrain:Array.from(S.terrain),kind:Array.from(S.kind),dens:Array.from(S.dens),burn:Array.from(S.burn),build:Array.from(S.build),pipe:Array.from(S.pipe),trade:{...S.trade},lastTrade:S.lastTrade,taxR:S.taxR,taxC:S.taxC,taxI:S.taxI,loans:S.loans.map(l=>({...l})),mission:S.mission,disasters:S.disasters,gExport:S.gExport,mpRoom:S.mpRoom||null,watStock:S.watStock||0,lfStock:S.lfStock||0,lfWarn:S.lfWarn||0,market:JSON.parse(JSON.stringify(S.market)),lastLoan:S.lastLoan,hiTechMsg:S.hiTechMsg,cam:{x:cam.x,y:cam.y,z:cam.z},news:news.slice()}}
 function load(d){if(!d||d.v!==1||!d.kind||d.kind.length!==NN)return false;
   S={...d,terrain:Uint8Array.from(d.terrain),kind:Uint8Array.from(d.kind),dens:Uint8Array.from(d.dens),burn:Uint8Array.from(d.burn),build:d.build&&d.build.length===NN?Uint8Array.from(d.build):new Uint8Array(NN),
@@ -1352,7 +1404,7 @@ function frame(now){
   if(keys.has('arrowup')||keys.has('w'))cam.y-=ps;if(keys.has('arrowdown')||keys.has('s'))cam.y+=ps;
   if(keys.size)clampCam();
   try{if(dirty)recompute();
-    const iv=SPEEDMS[S.speed]||0;if(iv>0){acc+=dt;if(acc>iv*3)acc=iv;while(acc>=iv){acc-=iv;simMonth()}}}
+    const iv=S.over?0:(SPEEDMS[S.speed]||0);if(iv>0){acc+=dt;if(acc>iv*3)acc=iv;while(acc>=iv){acc-=iv;simMonth()}}}
   catch(e){acc=0;dirty=false;reportErr('szimuláció',e)}
   try{render(now)}catch(e){reportErr('rajzolás',e)}
 }
