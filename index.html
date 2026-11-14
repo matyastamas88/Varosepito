@@ -236,6 +236,8 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
         <div class="row"><span>Víz (kapacitás / igény)</span><span class="v" id="pWater">0 / 0</span></div>
         <div class="row"><span>Szennyvíz (tisztított / keletkező)</span><span class="v" id="pSew">0 / 0</span></div>
         <div class="row"><span>Szemét (elszállítva / keletkező)</span><span class="v" id="pGarb">0 / 0</span></div>
+        <div class="row"><span>Víztároló (tárolt / hely)</span><span class="v" id="pWStore">–</span></div>
+        <div class="row"><span>Hulladéklerakó (telítettség)</span><span class="v" id="pLf">–</span></div>
       </section>
       <section data-tab="city">
         <h2>Térképnézet</h2>
@@ -363,10 +365,12 @@ const GCAP={16:80,17:150,18:60};
 const LOAN={amount:10000,months:60,pay:190,max:3};
 const HITECH_MONTH=240;
 const BUILD={6:6,7:2,8:3,9:3,10:4,11:6,14:3,15:4,16:1,17:5,18:4,19:1,20:6,21:12,22:10};
+const TOWER=23, TOWERCAP=600, LF_SIZE=3000;
+KN[TOWER]='Víztorony';UPKEEP[TOWER]=8;BUILD[TOWER]=2;SJOB[TOWER]=2;
 const builtAny=k=>{for(let i=0;i<NN;i++)if(S.kind[i]===k&&!S.build[i])return true;return false};
 const RAD={8:9,9:9,10:8,11:10,12:3,19:5,20:12,22:15};
 const COVOV={cpol:[POLICE,'59,91,168'],cfire:[FIRE,'200,60,48'],chosp:[HOSP,'214,60,110'],cedu:[SCHOOL,'200,140,30']};
-const TOOLOV={pipe:'water',pump:'water',treat:'water',police:'cpol',fire:'cfire',hosp:'chosp',school:'cedu'};
+const TOOLOV={pipe:'water',pump:'water',treat:'water',tower:'water',police:'cpol',fire:'cfire',hosp:'chosp',school:'cedu'};
 const BASEP={pow:{b:4,s:2.5,unit:'MW'},wat:{b:3,s:2,unit:'egység'},garb:{b:2.5,s:1.2,unit:'egység'}};
 const EVENTS={
   pow:[[0.7,'Hőség van a szomszéd városban, mindenki klímát kapcsol: megugrott az áram ára és a kereslet.',1.8],[-0.5,'A szomszéd új erőművet adott át, olcsó lett az áram, és alig vesznek tőlünk.',0.4]],
@@ -394,7 +398,8 @@ const TOOLS=[
   {id:'wind',g:'Energia',name:'Szélerőmű',cost:600,kind:WIND,mode:'single',sw:'#e6ecee',hint:'30 MW tiszta energia. Fenntartás 6 Ft/hó.'},
   {id:'pump',g:'Víz',name:'Vízmű',cost:700,kind:PUMP,mode:'single',sw:'#5f86a8',hint:'Vízparton 120, máshol 50 egység víz. Áram kell hozzá. Fenntartás 20 Ft/hó.'},
   {id:'treat',g:'Víz',name:'Szennyvíztisztító',cost:1200,kind:TREAT,mode:'single',sw:'#6b8f6a',hint:'150 egység szennyvizet tisztít a vízhálózaton. Áram kell hozzá. Fenntartás 30 Ft/hó.'},
-  {id:'landfill',g:'Hulladék',name:'Hulladéklerakó',cost:400,kind:LANDFILL,mode:'single',sw:'#8a7a5a',hint:'Havi 80 egység szemetet fogad, áram nélkül is. Szennyez és rontja a környéket. Út kell hozzá. Fenntartás 10 Ft/hó.'},
+  {id:'tower',g:'Víz',name:'Víztorony',cost:800,kind:TOWER,mode:'single',sw:'#9bb3c4',hint:'600 egység vizet tárol. A felesleg ide gyűlik, hiánynál innen pótol a város, és a szomszédnak csak a tárolt vízből tudsz eladni (Automata módban 25% tartalék marad). Vízcsőre kell kötni. Fenntartás 8 Ft/hó.'},
+  {id:'landfill',g:'Hulladék',name:'Hulladéklerakó',cost:400,kind:LANDFILL,mode:'single',sw:'#8a7a5a',hint:'Havonta 80 egység szemetet fogad, összesen 3000 egységnyi hely van benne. Ha megtelik, nem fogad többet, és a szomszéd szemetét is csak szabad hely esetén veheted át. A szemétégető és az újrahasznosító szabad kapacitása lassan apasztja. Út kell hozzá. Fenntartás 10 Ft/hó.'},
   {id:'incin',g:'Hulladék',name:'Szemétégető',cost:2500,kind:INCIN,mode:'single',sw:'#7d5a4a',hint:'Havi 150 egység szemetet éget el, és közben 40 MW áramot termel, de erősen szennyez. Út kell hozzá. Fenntartás 35 Ft/hó.'},
   {id:'recyc',g:'Hulladék',name:'Újrahasznosító',cost:1800,kind:RECYC,mode:'single',sw:'#4f9a8a',hint:'Havi 60 egység szemetet dolgoz fel szinte szennyezés nélkül. Út és áram kell hozzá. Fenntartás 40 Ft/hó.'},
   {id:'police',g:'Szolgáltatás',name:'Rendőrség',cost:500,kind:POLICE,mode:'single',sw:'#3b5ba8',hint:'Csökkenti a bűnözést 9 mezős körben. Fenntartás 35 Ft/hó.'},
@@ -465,7 +470,7 @@ function newGame(seed){
   pushMsg('Üdv, polgármester! Jelölj ki övezeteket az utak mellett. Az első küldetésedet a Városháza Város fülén találod.','good');
 }
 
-function fixDefaults(){if(!isFinite(S.money))S.money=0;if(!isFinite(S.month))S.month=0;if(!isFinite(S.rank))S.rank=0;if(!SPEEDMS.hasOwnProperty(S.speed))S.speed=1;S.taxR??=S.tax??9;S.taxC??=S.tax??9;S.taxI??=S.tax??9;S.loans??=[];S.mission??=0;S.disasters??=true;S.gExport??=false;S.market??=newMarket();S.trade.garb??=(S.gExport?'auto':'off');S.lastLoan??=0;S.hiTechMsg??=0}
+function fixDefaults(){S.watStock=+S.watStock||0;S.lfStock=+S.lfStock||0;if(!isFinite(S.money))S.money=0;if(!isFinite(S.month))S.month=0;if(!isFinite(S.rank))S.rank=0;if(!SPEEDMS.hasOwnProperty(S.speed))S.speed=1;S.taxR??=S.tax??9;S.taxC??=S.tax??9;S.taxI??=S.tax??9;S.loans??=[];S.mission??=0;S.disasters??=true;S.gExport??=false;S.market??=newMarket();S.trade.garb??=(S.gExport?'auto':'off');S.lastLoan??=0;S.hiTechMsg??=0}
 function afterLoad(){
   fixDefaults();
   grassCol=new Array(NN);
@@ -509,34 +514,40 @@ function computePower(){
   for(let i=0;i<NN;i++)if(!seen[i]){const c=cons(i);if(c){need+=c;short++}}
   T.supply=supply;T.need=need;T.shortage=short;T.powEdge=edge;T.powBuy=buy;T.powSell=sell;T.powEDef=eDef;T.powESur=eSur;
 }
-const isWNode=i=>S.pipe[i]||S.kind[i]===PUMP||S.kind[i]===TREAT;
+const isWNode=i=>S.pipe[i]||S.kind[i]===PUMP||S.kind[i]===TREAT||S.kind[i]===TOWER;
 function computeWater(){
   watered.fill(0);sewPol.fill(0);
   const net=new Int32Array(NN).fill(-1),nets=[];const mode=S.trade.wat;
   for(let s=0;s<NN;s++){if(net[s]>=0||!isWNode(s))continue;
-    const id=nets.length,list=[s];net[s]=id;let cap=0,treat=0,ed=false;
+    const id=nets.length,list=[s];net[s]=id;let cap=0,treat=0,ed=false,tower=0;
     for(let h=0;h<list.length;h++){const i=list[h],k=S.kind[i];
       if(k===PUMP&&powered[i]&&!S.burn[i]&&!S.build[i])cap+=waterNear[i]?WCAP_NEAR:WCAP_FAR;
       if(k===TREAT&&powered[i]&&!S.burn[i]&&!S.build[i])treat+=TREATCAP;
+      if(k===TOWER&&!S.burn[i]&&!S.build[i])tower++;
       if(S.pipe[i]&&onEdge(i))ed=true;
       nb(i,j=>{if(net[j]<0&&isWNode(j)){net[j]=id;list.push(j)}});}
-    nets.push({cap,treat,ed,need:0,cons:[]});}
+    nets.push({cap,treat,ed,tower,need:0,cons:[]});}
   const dist=new Uint8Array(NN).fill(255),owner=new Int32Array(NN).fill(-1),q=[];
   for(let i=0;i<NN;i++)if(net[i]>=0){dist[i]=0;owner[i]=net[i];q.push(i)}
   for(let h=0;h<q.length;h++){const i=q[h];if(dist[i]>=2)continue;nb(i,j=>{if(dist[j]===255){dist[j]=dist[i]+1;owner[j]=owner[i];q.push(j)}})}
   let need=0,short=0,supply=0,buy=0,sell=0,sew=0,treated=0,edge=false,eDef=0,eSur=0;
   for(let i=0;i<NN;i++){const c=wcons(i);if(!c)continue;need+=c;if(owner[i]>=0){const n=nets[owner[i]];n.need+=c;n.cons.push(i)}else short++}
+  let stockCap=0,towerEdge=false;for(const n of nets){stockCap+=n.tower*TOWERCAP;if(n.tower&&n.ed)towerEdge=true}
+  let stockLeft=Math.min(S.watStock||0,stockCap),fill=0,draw=0;
   for(const n of nets){let cap=n.cap,b=0;
+    if(n.tower&&n.need>cap&&stockLeft>0){const d=Math.min(stockLeft,n.need-cap);cap+=d;stockLeft-=d;draw+=d}
     if(n.ed)eDef+=Math.max(0,n.need-cap);
     if(n.ed){edge=true;if((mode==='buy'||mode==='auto')&&n.need>cap){b=Math.max(0,Math.min(S.market.wat.sup-buy,n.need-cap));cap+=b;buy+=b}}
     supply+=cap;let used=0;
     for(const i of n.cons){const c=wcons(i);if(c<=cap){cap-=c;used+=c;watered[i]=1}else short++}
-    if(n.ed&&!b)eSur+=Math.max(0,Math.floor(cap));
-    if(n.ed&&!b&&(mode==='sell'||mode==='auto')&&cap>=1)sell+=Math.max(0,Math.min(S.market.wat.dem-sell,Math.floor(cap)));
+    if(n.tower&&!b&&cap>=1){const f=Math.max(0,Math.min(Math.floor(cap),stockCap-stockLeft-fill));fill+=f}
     sew+=used;const tr=Math.min(used,n.treat);treated+=tr;
     const ratio=used?(used-tr)/used:0;
     if(ratio>0)for(const i of n.cons)if(watered[i])sewPol[i]=ratio*14;}
-  T.wSupply=supply;T.wNeed=need;T.wShort=short;T.watEdge=edge;T.watBuy=buy;T.watSell=sell;T.watEDef=eDef;T.watESur=eSur;T.sewage=sew;T.treated=treated;T.treatCap=nets.reduce((a,n)=>a+n.treat,0);
+  T.wSupply=supply;T.wNeed=need;T.wShort=short;T.watEdge=edge;T.watBuy=buy;T.watSell=sell;T.watEDef=eDef;T.sewage=sew;
+  const avail=Math.max(0,Math.floor(stockLeft-(mode==='auto'?stockCap*0.25:0)));T.watESur=towerEdge?avail:0;T.watReserve=mode==='auto'?Math.round(stockCap*0.25):0;
+  T.watSell=towerEdge&&(mode==='sell'||mode==='auto')?Math.max(0,Math.min(S.market.wat.dem,avail)):0;
+  T.watFill=fill;T.watDraw=draw;T.watStockCap=stockCap;T.watStockAfter=Math.max(0,Math.min(stockCap,stockLeft+fill-T.watSell));T.treated=treated;T.treatCap=nets.reduce((a,n)=>a+n.treat,0);
 }
 function computeAccess(){
   const d=new Uint8Array(NN).fill(255);const q=[];
@@ -587,11 +598,20 @@ function totals(){let p=0,c=0,ind=0,sv=0,na=0;
   const ct=p*0.22+12, it=p*0.3+30;
   T.demC=cl((ct-c)/ct-tk(S.taxC));
   T.demI=cl((it-ind)/it-tk(S.taxI));
-  let gcap=0;for(let i=0;i<NN;i++){const k=S.kind[i];if(GCAP[k]&&access[i]&&!S.burn[i]&&!S.build[i]&&(k===LANDFILL||powered[i]))gcap+=GCAP[k]}
-  T.garbage=Math.round(p*0.05+c*0.04+ind*0.06);T.gCap=gcap;
-  const gm=S.trade.garb,mk=S.market.garb;let rem=Math.max(0,T.garbage-gcap);T.roadEdge=hasRoadEdge();
+  let incCap=0,lfIn=0,lfN=0;for(let i=0;i<NN;i++){const k=S.kind[i];if(!GCAP[k]||!access[i]||S.burn[i]||S.build[i])continue;
+    if(k===LANDFILL){lfIn+=GCAP[k];lfN++}else if(powered[i])incCap+=GCAP[k]}
+  T.garbage=Math.round(p*0.05+c*0.04+ind*0.06);T.roadEdge=hasRoadEdge();
+  const lfCap=lfN*LF_SIZE,lfStock=Math.min(S.lfStock||0,lfCap),lfFree=Math.max(0,lfCap-lfStock);
+  const gm=S.trade.garb,mk=S.market.garb;let rem=T.garbage;
+  const burnt=Math.min(rem,incCap);rem-=burnt;
+  const dump=Math.min(rem,lfIn,lfFree);rem-=dump;
+  T.gDef=rem;
   T.gExport=T.roadEdge&&(gm==='buy'||gm==='auto')&&rem>0?Math.min(mk.sup,rem):0;rem-=T.gExport;
-  const spare=Math.max(0,gcap-T.garbage);T.gImport=T.roadEdge&&(gm==='sell'||gm==='auto')&&spare>0?Math.min(mk.dem,spare):0;
+  const space=Math.max(0,Math.min(lfIn-dump,lfFree-dump));T.gSpace=T.roadEdge?space:0;
+  T.gImport=T.roadEdge&&(gm==='sell'||gm==='auto')&&space>0?Math.min(mk.dem,space):0;
+  T.lfReduce=Math.min(incCap-burnt,lfStock);T.lfDump=dump;T.lfCap=lfCap;
+  T.lfAfter=Math.max(0,Math.min(lfCap,lfStock+dump+T.gImport-T.lfReduce));
+  T.gCap=incCap+Math.min(lfIn,lfFree);
   T.gUncol=rem;T.gRatio=T.garbage?rem/T.garbage*Math.min(1,p/1500):0;
 }
 const DEM=k=>k===RZ?T.demR:k===CZ?T.demC:T.demI;
@@ -631,6 +651,9 @@ function simMonth(){
   if(loanPay&&!S.loans.length)pushMsg('Az utolsó hitelt is visszafizetted.','good');
   let exp=buys+loanPay;for(let i=0;i<NN;i++){exp+=UPKEEP[S.kind[i]]||0;if(S.pipe[i])exp+=0.2}exp=Math.round(exp);
   S.money+=inc-exp;S.lastInc=inc;S.lastExp=exp;S.lastTrade=Math.round(sales-buys);S.lastLoan=loanPay;
+  S.watStock=Math.round(T.watStockAfter||0);S.lfStock=Math.round(T.lfAfter||0);dirty=true;
+  if(T.lfCap&&S.lfStock>=T.lfCap*0.9&&!S.lfWarn){S.lfWarn=1;pushMsg(S.lfStock>=T.lfCap?'Megtelt a hulladéklerakó! Nem fogad több szemetet. Építs újat, vagy szemétégetőt, ami apasztja.':'A hulladéklerakó 90%-ig megtelt.','warn')}
+  if(T.lfCap&&S.lfStock<T.lfCap*0.8)S.lfWarn=0;
   for(let i=0;i<NN;i++)if(S.build[i]){S.build[i]--;if(!S.build[i]){dirty=true;if((BUILD[S.kind[i]]||0)>=3)pushMsg(`Elkészült: ${KN[S.kind[i]]}. Mostantól működik.`,'good')}}
   S.month++;
   if(fires)pushMsg(fires>1?`${fires} helyen tűz ütött ki!`:'Tűz ütött ki a városban!','warn');
@@ -671,12 +694,13 @@ function advisorSays(){
   o.env=T.gRatio>0.3?[2,`Havonta ${fmtN(T.gUncol)} egység szemét marad az utcán. Építs hulladéklerakót, szemétégetőt vagy újrahasznosítót.`]
     :T.sewage-T.treated>5?[2,`${fmtN(T.sewage-T.treated)} egység kezeletlen szennyvíz szennyezi a várost. Építs szennyvíztisztítót a vízhálózatra.`]
     :pn&&pr/pn>30?[1,'A lakók panaszkodnak a szennyezésre. Telepíts parkot, vagy vidd távolabb az ipart.']
+    :T.lfCap&&(S.lfStock||0)>T.lfCap*0.85?[1,'Hamarosan megtelik a hulladéklerakó. Építs újat, vagy szemétégetőt, ami lassan apasztja.']
     :T.gUncol>0?[1,'Kezd felgyűlni a szemét. Ideje szemétkezelésről gondoskodni.']
     :[0,'Tiszta a levegő, a környezet rendben van.'];
   o.util=T.shortage>0?[2,`Áramhiány: ${T.shortage} épület sötétben van. Építs erőművet, vagy vegyél áramot a szomszédtól.`]
     :T.wShort>8&&T.pop>250?[1,'Sok épületnek nincs vize, ezért nem nőhet az 1. szint fölé. Építs vízművet, és vezess csövet a házakhoz.']
     :T.supply&&T.need>T.supply*0.85?[1,'Az áramtermelés a határán van. Gondolj egy új erőműre.']
-    :[0,'Az áram- és vízellátás rendben van.'];
+    :T.watEdge&&!T.watStockCap&&T.wSupply>T.wNeed&&S.trade.wat!=='buy'?[1,'Van vízfeleslegünk, de víztorony nélkül nem tudunk belőle eladni. Építs víztornyot a vízhálózatra.']:[0,'Az áram- és vízellátás rendben van.'];
   const nextSpecial=TOOLS.find(t=>t.rank&&S.rank>=t.rank&&!S.kind.includes(t.kind));
   const m=Math.max(T.demR,T.demC,T.demI);
   o.dev=T.sat<40&&T.pop>100?[2,`Elégedetlenek a lakók (${Math.round(T.sat)}%). Az adó, a munkanélküliség, a szennyezés és a hiányzó szolgáltatások rontják a hangulatot.`]
@@ -856,7 +880,7 @@ const pal={
 const pick=(a,h)=>a[Math.floor(h*a.length)%a.length];
 function bHeight(i){const k=S.kind[i],d=S.dens[i];
   if(k===RZ)return [0,16,26,56][d];if(k===CZ)return [0,13,34,74][d];if(k===IZ)return [0,11,17,22][d];
-  return {6:22,7:52,8:17,9:17,10:15,11:29,14:24,15:10,16:6,17:20,18:14,19:20,20:32,21:12,22:48}[k]||0}
+  return {23:40,6:22,7:52,8:17,9:17,10:15,11:29,14:24,15:10,16:6,17:20,18:14,19:20,20:32,21:12,22:48}[k]||0}
 
 function drawGround(x,y,cx,cy,t){
   const i=y*N+x,k=S.kind[i],ter=S.terrain[i];
@@ -942,7 +966,7 @@ function drawObject(x,y,cx,cy,t){
       ctx.fillStyle=T.sewage>T.treated?'#7a7a4a':'#5f8f72';ctx.beginPath();ctx.ellipse(cx+ox,cy+oy-1.5,9,4.4,0,0,7);ctx.fill();
       ctx.strokeStyle='rgba(255,255,255,.5)';ctx.lineWidth=1;ctx.beginPath();const a=t*1.5+ox;ctx.moveTo(cx+ox,cy+oy-1.5);ctx.lineTo(cx+ox+Math.cos(a)*8,cy+oy-1.5+Math.sin(a)*4);ctx.stroke()}
     box(cx+10,cy-6,.24,12,'#c9c3b8')}
-  else if(k===LANDFILL){for(const [ox,oy,r,c] of [[-9,-1,10,'#7a6a4c'],[8,3,9,'#857455'],[0,-5,7,'#6f6046']]){ctx.fillStyle=c;ctx.beginPath();ctx.ellipse(cx+ox,cy+oy,r,r*.6,0,Math.PI,2*Math.PI);ctx.fill()}
+  else if(k===LANDFILL){const lfS=0.45+0.8*(T.lfCap?Math.min(1,(S.lfStock||0)/T.lfCap):0);for(const [ox,oy,r,c] of [[-9,-1,10,'#7a6a4c'],[8,3,9,'#857455'],[0,-5,7,'#6f6046']]){ctx.fillStyle=c;ctx.beginPath();ctx.ellipse(cx+ox,cy+oy,r*lfS,r*.6*lfS,0,Math.PI,2*Math.PI);ctx.fill()}
     for(let n=0;n<9;n++){const a=hash(x,y,n+60);ctx.fillStyle=['#c44','#48c','#ddd','#ec4'][n%4];ctx.fillRect(cx-14+a*26,cy-9+((a*53)%1)*9,2,2)}}
   else if(k===INCIN){box(cx,cy+2,.8,18,'#8a6f62');box(cx+9,cy-4,.13,50,'#6e5a50');const fl=powered[i]||1?0.6+0.4*Math.sin(t*9+h*6):0.2;
     ctx.fillStyle=`rgba(255,${(120+fl*60)|0},30,${fl})`;ctx.beginPath();ctx.moveTo(cx-19,cy-3);ctx.lineTo(cx-9,cy+2);ctx.lineTo(cx-9,cy-6);ctx.lineTo(cx-19,cy-11);ctx.fill();
@@ -961,6 +985,11 @@ function drawObject(x,y,cx,cy,t){
     for(let n=0;n<8;n++){const a=a0+n*Math.PI/4,px=wx+Math.cos(a)*r,py=wy+Math.sin(a)*r;ctx.strokeStyle='rgba(120,120,120,.6)';ctx.lineWidth=.8;ctx.beginPath();ctx.moveTo(wx,wy);ctx.lineTo(px,py);ctx.stroke();
       ctx.fillStyle=['#e4572e','#f3a712','#29a3d6','#76b041'][n%4];ctx.fillRect(px-2.5,py,5,4)}
     ctx.fillStyle='#e4572e';ctx.beginPath();ctx.moveTo(cx-19,cy+4);ctx.lineTo(cx-11,cy-12);ctx.lineTo(cx-3,cy+4);ctx.fill();ctx.fillStyle='#fff';ctx.beginPath();ctx.moveTo(cx-15,cy+4);ctx.lineTo(cx-11,cy-12);ctx.lineTo(cx-7,cy+4);ctx.fill()}
+  else if(k===TOWER){const fr=T.watStockCap?Math.min(1,(S.watStock||0)/T.watStockCap):0,ty=cy-24;
+    ctx.strokeStyle='#7d8a93';ctx.lineWidth=2;ctx.beginPath();for(const [ox,oy] of [[-10,0],[10,0],[0,5],[0,-5]]){ctx.moveTo(cx+ox,cy+oy);ctx.lineTo(cx+ox*0.55,ty)}ctx.stroke();
+    ctx.fillStyle='#aebdc8';ctx.fillRect(cx-11,ty-16,22,16);ctx.beginPath();ctx.ellipse(cx,ty,11,5,0,0,Math.PI);ctx.fill();
+    ctx.fillStyle='#d5dfe6';ctx.beginPath();ctx.ellipse(cx,ty-16,11,5,0,0,7);ctx.fill();
+    ctx.fillStyle='#4a5a66';ctx.fillRect(cx-3,ty-14,6,13);ctx.fillStyle='#4f9be0';ctx.fillRect(cx-3,ty-1-13*fr,6,13*fr)}
   else if(k===HOSP){box(cx,cy,.76,29,'#eef0f0');windows(cx,cy,.76,29,4,'rgba(110,160,190,.7)');const ty=cy-29;ctx.strokeStyle='#d33';ctx.lineWidth=3.2;ctx.beginPath();ctx.moveTo(cx-9,ty-4.5);ctx.lineTo(cx+9,ty+4.5);ctx.moveTo(cx+9,ty-4.5);ctx.lineTo(cx-9,ty+4.5);ctx.stroke()}
   if(burning){const bh=bHeight(i);for(let f=0;f<5;f++){const a=hash(x,y,f+40),fl=Math.sin(t*12+f*2)*4;
     ctx.fillStyle=f%2?'rgba(255,170,30,.9)':'rgba(240,80,20,.9)';const fx=cx-14+a*28,fy=cy-bh*0.5+a*6;
@@ -1130,6 +1159,10 @@ function hud(){
   const bal=(id,cap,need,unit)=>{const b=Math.round(cap-need),e=$(id);e.textContent=(b>0?'+':b<0?'−':'±')+fmtN(Math.abs(b))+(unit?' '+unit:'');
     e.classList.toggle('neg',b<0);e.classList.toggle('pos',b>0);$(id+'D').textContent=`${fmtN(cap)} / ${fmtN(need)}`};
   bal('uPow',T.supply,T.need,'MW');bal('uWat',T.wSupply,T.wNeed,'');bal('uSew',T.treatCap||0,T.sewage,'');bal('uGarb',T.gCap+T.gExport,T.garbage,'');
+  if(T.watStockCap)$('uWatD').textContent+=` · tárolva ${fmtN(S.watStock||0)}`;
+  if(T.lfCap)$('uGarbD').textContent+=` · lerakó ${Math.round((S.lfStock||0)/T.lfCap*100)}%`;
+  $('pWStore').textContent=T.watStockCap?`${fmtN(S.watStock||0)} / ${fmtN(T.watStockCap)}`:'nincs víztorony';
+  {const lfp=T.lfCap?Math.round((S.lfStock||0)/T.lfCap*100):0,lfe=$('pLf');lfe.textContent=T.lfCap?`${fmtN(S.lfStock||0)} / ${fmtN(T.lfCap)} (${lfp}%)`:'nincs lerakó';lfe.style.color=lfp>=90?'var(--danger)':''}
   const net=S.lastInc-S.lastExp,ne=$('sNet');ne.textContent=(net>0?'+':'')+fmtN(net)+' Ft';ne.classList.toggle('neg',net<0);
   let rk=0;TITLES.forEach((t,ix)=>{if(T.pop>=t[0])rk=ix});$('rank').textContent=TITLES[rk][1];
   for(const [id,v] of [['dR',T.demR],['dC',T.demC],['dI',T.demI]]){const b=$(id),hgt=Math.abs(v)*50;b.style.height=hgt+'%';b.style.top=v>=0?(50-hgt)+'%':'50%';b.style.opacity=v>=0?1:.45}
@@ -1182,6 +1215,8 @@ function inspect(i,refresh){
   if(k===RZ&&S.dens[i])rows+=meter('Elégedettség',sat[i],'#d6a23d');
   if(k===IZ&&S.dens[i]&&hiTech(i))rows+=`<div class="row"><span>Típus</span><span class="pill ok">high-tech ipar</span></div>`;
   if(RAD[k])rows+=`<div class="row"><span>Hatósugár</span><span class="v">${RAD[k]} mező</span></div>`;
+  if(k===TOWER)rows+=meter('Tárolt víz',T.watStockCap?(S.watStock||0)/T.watStockCap*100:0,'#3a86d0')+`<div class="row"><span>Városi készlet</span><span class="v">${fmtN(S.watStock||0)} / ${fmtN(T.watStockCap||0)}</span></div>`;
+  if(k===LANDFILL)rows+=meter('Telítettség',T.lfCap?(S.lfStock||0)/T.lfCap*100:0,'#8a6a3a')+`<div class="row"><span>Lerakók összesen</span><span class="v">${fmtN(S.lfStock||0)} / ${fmtN(T.lfCap||0)}</span></div>`;
   if(GCAP[k])rows+=`<div class="row"><span>Szemétkapacitás</span><span class="v">${GCAP[k]} / hó</span></div>`;
   if(CAP[k])rows+=`<div class="row"><span>Teljesítmény</span><span class="v">${CAP[k]} MW</span></div>`;
   if(UPKEEP[k])rows+=`<div class="row"><span>Fenntartás</span><span class="v">${UPKEEP[k]} Ft/hó</span></div>`;
@@ -1292,7 +1327,7 @@ window.addEventListener('hashchange',()=>{const mm=location.hash.match(/^#join-(
 
 /* ---------- mentés ---------- */
 function serialize(){return{v:1,seed:S.seed,name:S.name,money:S.money,month:S.month,tax:S.tax,speed:S.speed,rank:S.rank,lastInc:S.lastInc,lastExp:S.lastExp,
-  terrain:Array.from(S.terrain),kind:Array.from(S.kind),dens:Array.from(S.dens),burn:Array.from(S.burn),build:Array.from(S.build),pipe:Array.from(S.pipe),trade:{...S.trade},lastTrade:S.lastTrade,taxR:S.taxR,taxC:S.taxC,taxI:S.taxI,loans:S.loans.map(l=>({...l})),mission:S.mission,disasters:S.disasters,gExport:S.gExport,mpRoom:S.mpRoom||null,market:JSON.parse(JSON.stringify(S.market)),lastLoan:S.lastLoan,hiTechMsg:S.hiTechMsg,cam:{x:cam.x,y:cam.y,z:cam.z},news:news.slice()}}
+  terrain:Array.from(S.terrain),kind:Array.from(S.kind),dens:Array.from(S.dens),burn:Array.from(S.burn),build:Array.from(S.build),pipe:Array.from(S.pipe),trade:{...S.trade},lastTrade:S.lastTrade,taxR:S.taxR,taxC:S.taxC,taxI:S.taxI,loans:S.loans.map(l=>({...l})),mission:S.mission,disasters:S.disasters,gExport:S.gExport,mpRoom:S.mpRoom||null,watStock:S.watStock||0,lfStock:S.lfStock||0,lfWarn:S.lfWarn||0,market:JSON.parse(JSON.stringify(S.market)),lastLoan:S.lastLoan,hiTechMsg:S.hiTechMsg,cam:{x:cam.x,y:cam.y,z:cam.z},news:news.slice()}}
 function load(d){if(!d||d.v!==1||!d.kind||d.kind.length!==NN)return false;
   S={...d,terrain:Uint8Array.from(d.terrain),kind:Uint8Array.from(d.kind),dens:Uint8Array.from(d.dens),burn:Uint8Array.from(d.burn),build:d.build&&d.build.length===NN?Uint8Array.from(d.build):new Uint8Array(NN),
     pipe:d.pipe&&d.pipe.length===NN?Uint8Array.from(d.pipe):new Uint8Array(NN),trade:d.trade||{pow:'auto',wat:'auto'},lastTrade:d.lastTrade||0};
