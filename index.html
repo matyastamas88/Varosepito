@@ -148,8 +148,8 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 .taxl{font-size:12.5px;font-weight:600}
 .mis-t{margin:0;font-weight:600;line-height:1.35}
 .tool.locked{opacity:.4}
-.tabs{overflow-x:auto;scrollbar-width:none}
-.tabs button{flex:1 0 auto;padding:10px 8px}
+.tabs{flex-wrap:wrap}
+.tabs button{flex:1 1 30%;padding:9px 4px;min-width:0;white-space:nowrap}
 .nbcards{display:flex;flex-direction:column;gap:10px}
 .nbcard{border:1px solid var(--line);border-radius:8px;padding:9px 10px;display:flex;flex-direction:column;gap:6px;background:var(--panel-2)}
 .nbcard.pl{border-color:var(--accent);box-shadow:inset 3px 0 0 var(--accent)}
@@ -263,6 +263,10 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
       <section data-tab="city">
         <h2>Küldetés</h2>
         <div id="mission"></div>
+      </section>
+      <section data-tab="city">
+        <h2>Ranglista</h2>
+        <ul class="mplist" id="boardCity"></ul>
       </section>
       <section data-tab="city">
         <h2>Kereslet</h2>
@@ -1436,8 +1440,9 @@ function renderGoods(){const el=$('goodsList');if(!el)return;const gd=T.gd||{};
   const fac=[MILL,BAKERY,STEELW,PARTSF,CARF].map(k=>{let all=0;for(let i=0;i<NN;i++)if(S.kind[i]===k)all++;return all?`${KN[k]} ${cnt[k]||0}/${all}`:''}).filter(Boolean).join(' · ');
   $('prodSum').innerHTML=`<div class="row"><span>Lakóknak eladva</span><span class="v">+${fmtN(L.dom)} Ft</span></div><div class="row"><span>Szomszédnak eladva</span><span class="v">+${fmtN(L.exp)} Ft</span></div><div class="row"><span>Alapanyag-vásárlás</span><span class="v">−${fmtN(L.imp)} Ft</span></div><div class="row"><span>Gyárak fenntartása</span><span class="v">−${fmtN(L.up)} Ft</span></div><div class="row"><span><b>Gyártás haszna (előző hónap)</b></span><span class="v" style="color:${net<0?'var(--danger)':'var(--ok)'}">${net>=0?'+':'−'}${fmtN(Math.abs(net))} Ft</span></div><div class="note">${fac?'Működő gyárak: '+fac:'Még nincs gyárad. A Gyártás csoportban építhetsz.'}</div>`}
 function boardRows(){const rows=[{me:true,name:S.name,pop:T.pop,money:S.money,sat:T.sat}];for(const d of DIRS)if(isPlayer(d)){const p=NBP[d];rows.push({pid:p.pid,dir:d,name:p.name,pop:p.pop,money:p.money,sat:p.sat})}return rows.sort((a,b)=>b.pop-a.pop)}
-function renderBoard(withDrop){const ul=$('mpList');if(!ul)return;const rows=boardRows();
-  ul.innerHTML=rows.map((r,ix)=>`<li><span class="rk">${ix+1}.</span><b>${esc(String(r.name).slice(0,24))}</b><span>${r.me?'(te)':DIRNAME[r.dir].toLowerCase()+' szomszéd'} · ${fmtN(r.pop)} lakos · ${fmtN(r.money)} Ft · ${Math.round(r.sat)}%</span>${withDrop&&!r.me?`<button class="mpdrop" data-drop="${esc(r.pid)}">Bontás</button>`:''}</li>`).join('')+(rows.length<2?'<li><span>Még nincs játékos szomszédod.</span></li>':'')}
+function renderBoard(withDrop){const rows=boardRows();
+  const html=drop=>rows.map((r,ix)=>`<li><span class="rk">${ix+1}.</span><b>${esc(String(r.name).slice(0,24))}</b><span>${r.me?'(te)':DIRNAME[r.dir].toLowerCase()+' szomszéd'} · ${fmtN(r.pop)} lakos · ${fmtN(r.money)} Ft · ${Math.round(r.sat)}%</span>${drop&&!r.me?`<button class="mpdrop" data-drop="${esc(r.pid)}">Bontás</button>`:''}</li>`).join('')+(rows.length<2?'<li><span>Még nincs játékos szomszédod. Ha valaki csatlakozik a multihoz (Beállítás fül), itt látod a városát is.</span></li>':'');
+  const a=$('mpList');if(a)a.innerHTML=html(withDrop);const b=$('boardCity');if(b)b.innerHTML=html(false)}
 $('nbCards').addEventListener('click',e=>{const b=e.target.closest('button[data-nbt]');if(!b)return;const n=S.nb[b.dataset.d];if(b.dataset.nbt==='buy')n.allowBuy=!n.allowBuy;else n.allowSell=!n.allowSell;recompute();totals();hud();mpWrite(true)});
 $('goodsList').addEventListener('click',e=>{const b=e.target.closest('button[data-g]');if(!b)return;S.trade[b.dataset.g]=b.dataset.m;renderGoods();mpWrite(true)});
 $('techList').addEventListener('click',e=>{const b=e.target.closest('button[data-tech]');if(!b)return;S.research.cur=b.dataset.tech;
@@ -1484,7 +1489,7 @@ function hud(){
   $('tPow').textContent=tr(T.powEdge,T.powBuy,T.powSell,'vesz','elad','MW');
   $('tWat').textContent=tr(T.watEdge,T.watBuy,T.watSell,'vesz','elad','egység');
   $('tGarb').textContent=!T.roadEdge?'nincs út a térkép széléig':tr(true,T.gExport,T.gImport,'elvitet','átvesz','egység');
-  renderNeighbors();renderGoods();
+  renderNeighbors();renderGoods();renderBoard(typeof mpDrop==='function');
   $('pInc').textContent=fmtN(S.lastInc)+' Ft';$('pExp').textContent=fmtN(S.lastExp)+' Ft';
   $('pTrade').textContent=(S.lastTrade>0?'+':'')+fmtN(S.lastTrade||0)+' Ft';$('pLoanPay').textContent=fmtN(S.lastLoan||0)+' Ft';
   for(const z of ['R','C','I']){if(document.activeElement!==$('tax'+z))$('tax'+z).value=S['tax'+z];$('taxOut'+z).textContent=S['tax'+z]+'%'}
