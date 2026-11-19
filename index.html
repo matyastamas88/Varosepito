@@ -486,7 +486,7 @@ const towerCap=()=>has('bigtower')?TOWERCAP*2:TOWERCAP;
 const lfSize=()=>has('recyc2')?Math.round(LF_SIZE*1.5):LF_SIZE;
 const gcapOf=k=>k===RECYC&&has('recyc2')?120:GCAP[k];
 const radOf=k=>{const b=RAD[k];if(!b)return 0;if(k===POLICE&&has('patrol'))return b+4;if(k===FIRE&&has('firetruck'))return b+4;if(k===HOSP&&has('ambulance'))return b+4;return b};
-const MAXLVL=15,LVLSTEP=0.2,UPKSTEP=0.08;
+const MAXLVL=15,LVLSTEP=0.3,UPKSTEP=0.08;
 const lvlOf=i=>Math.max(1,(S.lvl&&S.lvl[i])||1);
 const lvlMul=i=>1+LVLSTEP*(lvlOf(i)-1);
 const upkMul=i=>1+UPKSTEP*(lvlOf(i)-1);
@@ -1600,7 +1600,7 @@ function renderNews(){$('news').innerHTML=news.map(n=>`<li><b>${n.d}</b>${n.text
 let inspected=null;
 function meter(label,v,col){return `<div class="row"><span>${label}</span><span class="v">${Math.round(v)}</span></div><div class="meter"><i style="width:${Math.max(0,Math.min(100,v))}%;background:${col}"></i></div>`}
 const UPG=new Set([COAL,WIND,SOLAR,NUKE,PUMP,TREAT,TOWER,LANDFILL,INCIN,RECYC,MILL,BAKERY,STEELW,PARTSF,CARF,WAREHOUSE]);
-function upgCost(k,L){const t=TOOLS.find(x=>x.kind===k);return Math.round((t?t.cost:1000)*0.35*Math.pow(1.18,L-1)/10)*10}
+function upgCost(k,L){const t=TOOLS.find(x=>x.kind===k);return Math.round((t?t.cost:1000)*0.35*Math.pow(1.10,L-1)/10)*10}
 function outText(i,L){const k=S.kind[i],m=1+LVLSTEP*(L-1),r=v=>fmtN(Math.round(v)),gn=g=>GOODS[g].n.toLowerCase();
   if(k===SOLAR)return `${r((has('solar2')?60:40)*m)} MW nappal`;
   if(k===INCIN)return `${r(CAP[k]*m)} MW, ${r(gcapOf(k)*m)} szemét/hó`;
