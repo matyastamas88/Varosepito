@@ -155,6 +155,8 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 .rebuild{align-self:flex-start;border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink);border-radius:6px;padding:6px 12px;font-weight:600;cursor:pointer;margin-top:2px}
 .tabs{flex-wrap:wrap}
 .tabs button{flex:1 1 22%;padding:8px 2px;min-width:0;white-space:nowrap;font-size:11.5px}
+.ords .pro{color:var(--ok)}
+.ords .con{color:var(--danger)}
 .ords li.on{border-color:var(--accent);box-shadow:inset 3px 0 0 var(--accent)}
 .ords button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
 .spark{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
@@ -527,24 +529,35 @@ const towerCap=()=>has('bigtower')?TOWERCAP*2:TOWERCAP;
 const lfSize=()=>has('recyc2')?Math.round(LF_SIZE*1.5):LF_SIZE;
 const gcapOf=k=>k===RECYC&&has('recyc2')?120:GCAP[k];
 const radOf=k=>{const b=RAD[k];if(!b)return 0;if(k===POLICE&&has('patrol'))return b+4;if(k===FIRE&&has('firetruck'))return b+4;if(k===HOSP&&has('ambulance'))return b+4;return b};
+const SEASONS={
+  winter:{n:'tél',pow:1.2,wat:0.9,solar:0.6,wind:1.1,fire:1.2,traffic:1.08,mill:0.8,sat:-1,demC:0,flood:0.5},
+  spring:{n:'tavasz',pow:1,wat:1,solar:1,wind:1.05,fire:0.9,traffic:1,mill:1,sat:1,demC:0,flood:3},
+  summer:{n:'nyár',pow:1.05,wat:1.25,solar:1.2,wind:0.9,fire:1.5,traffic:1.03,mill:1.2,sat:1,demC:0.04,flood:1},
+  autumn:{n:'ősz',pow:1.05,wat:1,solar:0.85,wind:1.1,fire:1,traffic:1,mill:1.25,sat:0,demC:0,flood:1}};
+const SEASONMSG={winter:'Beköszöntött a tél: a fűtés miatt 20%-kal több áram kell, a napelemek kevesebbet termelnek, gyakoribb a tűz, lassabb a közlekedés, és a malmok is kevesebbet őrölnek.',
+  spring:'Itt a tavasz: kellemesebb az idő (+1 elégedettség), de nő az árvíz esélye.',
+  summer:'Nyár van: 25%-kal több víz fogy, a napelemek többet termelnek, a száraz időben gyakoribb a tűz, és jönnek a turisták.',
+  autumn:'Ősz van, aratás: a malmok 25%-kal többet őrölnek.'};
+const seasonOf=m=>{const x=((m%12)+12)%12;return x===11||x<=1?'winter':x<=4?'spring':x<=7?'summer':'autumn'};
+const SE=()=>SEASONS[seasonOf(S?S.month:0)];
 const ORDS=[
-  {id:'light',n:'Közvilágítás',d:'20%-kal kevesebb bűnözés.',base:10,per:0.03,fx:{crime:0.8}},
-  {id:'guard',n:'Polgárőrség',d:'10%-kal kevesebb bűnözés, és kicsit elégedettebbek a lakók.',base:15,per:0,fx:{crime:0.9,sat:1}},
-  {id:'smoke',n:'Kötelező füstérzékelők',d:'40%-kal ritkábban üt ki tűz.',base:5,per:0.02,fx:{fire:0.6}},
-  {id:'transit',n:'Ingyenes tömegközlekedés',d:'15%-kal kevesebb autó az utakon, +3 elégedettség.',base:0,per:0.08,fx:{traffic:0.85,sat:3}},
-  {id:'recycle',n:'Szelektív hulladékgyűjtés',d:'20%-kal kevesebb szemét keletkezik.',base:5,per:0.03,fx:{garb:0.8}},
-  {id:'energy',n:'Energiatakarékossági program',d:'A lakások és üzletek 10%-kal kevesebb áramot fogyasztanak.',base:10,per:0.03,fx:{pow:0.9}},
-  {id:'water',n:'Vízspórolás',d:'15%-kal kevesebb vízfogyasztás, de −1 elégedettség.',base:5,per:0.01,fx:{wat:0.85,sat:-1}},
-  {id:'nosmoke',n:'Dohányzási tilalom',d:'+2 elégedettség (egészségesebb lakók), de kicsit kisebb üzleti kereslet.',base:5,per:0,fx:{sat:2,demC:-0.05}},
-  {id:'health',n:'Ingyenes egészségügyi szűrés',d:'+3 elégedettség.',base:0,per:0.06,fx:{sat:3}},
-  {id:'beauty',n:'Városszépítő program',d:'+5 telekérték mindenhol, így magasabb házak épülhetnek.',base:10,per:0.04,fx:{land:5}},
-  {id:'tourism',n:'Turizmusreklám',d:'Nő a kereskedelmi kereslet, de 5%-kal több autó.',base:40,per:0,fx:{demC:0.12,traffic:1.05}},
-  {id:'indlimit',n:'Ipari szennyezési határérték',d:'Az ipar és a gyárak 30%-kal kevésbé szennyeznek, de kisebb az ipari kereslet.',base:0,per:0,fx:{indPol:0.7,demI:-0.1}},
-  {id:'business',n:'Vállalkozásbarát program',d:'Nő az ipari és kereskedelmi kereslet.',base:30,per:0.02,fx:{demC:0.06,demI:0.08}},
-  {id:'casino',n:'Szerencsejáték engedélyezése',d:'Lakosonként havi 0,08 Ft bevétel, de 15%-kal több bűnözés.',base:0,per:0,fx:{incPerPop:0.08,crime:1.15}}];
-const ORDMUL=new Set(['crime','fire','traffic','garb','pow','wat','indPol']);
-let OE={crime:1,fire:1,traffic:1,garb:1,pow:1,wat:1,indPol:1,sat:0,land:0,demC:0,demI:0,demR:0,incPerPop:0};
-function calcOE(){OE={crime:1,fire:1,traffic:1,garb:1,pow:1,wat:1,indPol:1,sat:0,land:0,demC:0,demI:0,demR:0,incPerPop:0};
+  {id:'light',n:'Közvilágítás',pro:'20%-kal kevesebb bűnözés.',con:'4%-kal több áram kell, éjszaka 10%-kal több.',base:10,per:0.03,fx:{crime:0.8,pow:1.04,powNight:1.06}},
+  {id:'guard',n:'Polgárőrség',pro:'10%-kal kevesebb bűnözés.',con:'Egyes lakóknak zavaró: −1 elégedettség.',base:15,per:0,fx:{crime:0.9,sat:-1}},
+  {id:'smoke',n:'Kötelező füstérzékelők',pro:'40%-kal ritkábban üt ki tűz.',con:'A lakók fizetik a készüléket: −1 elégedettség.',base:5,per:0.02,fx:{fire:0.6,sat:-1}},
+  {id:'transit',n:'Ingyenes tömegközlekedés',pro:'15%-kal kevesebb autó, +3 elégedettség.',con:'A több busz miatt 3%-kal nagyobb szennyezés.',base:0,per:0.08,fx:{traffic:0.85,sat:3,polAll:1.03}},
+  {id:'recycle',n:'Szelektív hulladékgyűjtés',pro:'20%-kal kevesebb szemét.',con:'Macerás a válogatás: −1 elégedettség.',base:5,per:0.03,fx:{garb:0.8,sat:-1}},
+  {id:'energy',n:'Energiatakarékossági program',pro:'A lakások és üzletek 10%-kal kevesebb áramot fogyasztanak.',con:'Kevésbé kényelmes: −1 elégedettség.',base:10,per:0.03,fx:{pow:0.9,sat:-1}},
+  {id:'water',n:'Vízspórolás',pro:'15%-kal kevesebb vízfogyasztás.',con:'Rövidebb zuhanyok: −1 elégedettség.',base:5,per:0.01,fx:{wat:0.85,sat:-1}},
+  {id:'nosmoke',n:'Dohányzási tilalom',pro:'Egészségesebb lakók: +2 elégedettség.',con:'Kevesebb vendég a vendéglátóhelyeken: kisebb üzleti kereslet.',base:5,per:0,fx:{sat:2,demC:-0.05}},
+  {id:'health',n:'Ingyenes egészségügyi szűrés',pro:'+3 elégedettség.',con:'Orvosi hulladék: 5%-kal több szemét.',base:0,per:0.06,fx:{sat:3,garb:1.05}},
+  {id:'beauty',n:'Városszépítő program',pro:'+5 telekérték mindenhol, így magasabb házak épülhetnek.',con:'Több látogató: 5%-kal több autó.',base:10,per:0.04,fx:{land:5,traffic:1.05}},
+  {id:'tourism',n:'Turizmusreklám',pro:'Nő a kereskedelmi kereslet.',con:'5%-kal több autó és 5%-kal több bűnözés (zsebtolvajok).',base:40,per:0,fx:{demC:0.12,traffic:1.05,crime:1.05}},
+  {id:'indlimit',n:'Ipari szennyezési határérték',pro:'Az ipar és a gyárak 30%-kal kevésbé szennyeznek.',con:'Kisebb az ipari kereslet.',base:0,per:0,fx:{indPol:0.7,demI:-0.1}},
+  {id:'business',n:'Vállalkozásbarát program',pro:'Nő az ipari és a kereskedelmi kereslet.',con:'Lazább szabályok: 10%-kal több ipari szennyezés.',base:30,per:0.02,fx:{demC:0.06,demI:0.08,indPol:1.1}},
+  {id:'casino',n:'Szerencsejáték engedélyezése',pro:'Lakosonként havi 0,08 Ft bevétel.',con:'15%-kal több bűnözés, −1 elégedettség.',base:0,per:0,fx:{incPerPop:0.08,crime:1.15,sat:-1}}];
+const ORDMUL=new Set(['crime','fire','traffic','garb','pow','wat','indPol','powNight','polAll']);
+let OE={crime:1,fire:1,traffic:1,garb:1,pow:1,wat:1,indPol:1,powNight:1,polAll:1,sat:0,land:0,demC:0,demI:0,demR:0,incPerPop:0};
+function calcOE(){OE={crime:1,fire:1,traffic:1,garb:1,pow:1,wat:1,indPol:1,powNight:1,polAll:1,sat:0,land:0,demC:0,demI:0,demR:0,incPerPop:0};
   for(const o of ORDS)if(S&&S.ord&&S.ord[o.id])for(const k in o.fx){if(ORDMUL.has(k))OE[k]*=o.fx[k];else OE[k]+=o.fx[k]}}
 const ordCostOf=o=>Math.round(o.base+o.per*(T.pop||0));
 const ordCost=()=>ORDS.reduce((a,o)=>a+(S.ord&&S.ord[o.id]?ordCostOf(o):0),0);
@@ -552,7 +565,7 @@ const MAXLVL=15,LVLSTEP=0.3,UPKSTEP=0.08;
 const lvlOf=i=>Math.max(1,(S.lvl&&S.lvl[i])||1);
 const lvlMul=i=>1+LVLSTEP*(lvlOf(i)-1);
 const upkMul=i=>1+UPKSTEP*(lvlOf(i)-1);
-function capOf(i){const k=S.kind[i],m=lvlMul(i);if(k===SOLAR){const day=(has('solar2')?60:40)*m;return Math.round(isNight()?(has('battery')?day*0.4:0):day)}return Math.round((CAP[k]||0)*m)}
+function capOf(i){const k=S.kind[i],m=lvlMul(i);if(k===SOLAR){const day=(has('solar2')?60:40)*m*SE().solar;return Math.round(isNight()?(has('battery')?day*0.4:0):day)}return Math.round((CAP[k]||0)*m*(k===WIND?SE().wind:1))}
 const builtAny=k=>{for(let i=0;i<NN;i++)if(S.kind[i]===k&&!S.build[i])return true;return false};
 const RAD={8:9,9:9,10:8,11:10,12:3,19:5,20:12,22:15,32:5,33:8};
 const COVOVX={bus:1};const COVOV={cpol:[POLICE,'59,91,168'],cfire:[FIRE,'200,60,48'],chosp:[HOSP,'214,60,110'],cedu:[SCHOOL,'200,140,30']};
@@ -570,7 +583,8 @@ Object.assign(UPKEEP,{26:25,27:40,28:60,29:60,30:150});Object.assign(BUILD,{26:3
 const RECIPE={26:{out:{flour:40}},27:{in:{flour:20},out:{bread:60}},28:{out:{steel:24}},29:{in:{steel:12},out:{parts:24}},30:{in:{steel:6,parts:12},out:{cars:2}}};
 const FPOW={26:4,27:4,28:10,29:8,30:12},FWAT={26:2,27:3,28:5,29:3,30:5},FPOL={26:1,27:1,28:22,29:6,30:8};
 const isFactory=k=>k>=26&&k<=30;
-const WAREHOUSE=31,BUS=32,METRO=33;
+const WAREHOUSE=31,BUS=32,METRO=33,PORT=34;
+Object.assign(KN,{34:'Kikötő'});Object.assign(UPKEEP,{34:60});Object.assign(BUILD,{34:6});Object.assign(SJOB,{34:40});RAD[34]=12;
 Object.assign(KN,{31:'Raktár',32:'Buszmegálló',33:'Metróállomás'});Object.assign(UPKEEP,{31:20,32:12,33:70});Object.assign(BUILD,{31:3,32:1,33:8});Object.assign(SJOB,{31:8,32:3,33:20});
 const EVENTS={
   pow:[[0.7,'Hőség van a szomszéd városban, mindenki klímát kapcsol: megugrott az áram ára és a kereslet.',1.8],[-0.5,'A szomszéd új erőművet adott át, olcsó lett az áram, és alig vesznek tőlünk.',0.4]],
@@ -608,6 +622,7 @@ const TOOLS=[
   {id:'parts',g:'Gyártás',name:'Alkatrészgyár',cost:5000,kind:PARTSF,mode:'single',sw:'#6f8fb0',tech:'autoipar',hint:'Kutatás után építhető. 12 acélból havonta 24 alkatrész. 35 munkahely, fenntartás 60 Ft/hó.'},
   {id:'carf',g:'Gyártás',name:'Autógyár',cost:15000,kind:CARF,mode:'single',sw:'#c04848',tech:'autoipar',hint:'Kutatás után építhető. 6 acél + 12 alkatrész → havonta 2 autó, darabja kb. 240 Ft. 80 munkahely, fenntartás 150 Ft/hó.'},
   {id:'warehouse',g:'Gyártás',name:'Raktár',cost:2000,kind:WAREHOUSE,mode:'single',sw:'#a08a6a',hint:'Több árut tárolhatsz: +1500 liszt, +2000 kenyér, +1200 acél és alkatrész, +60 autó. Út kell hozzá. Fenntartás 20 Ft/hó.'},
+  {id:'port',g:'Gyártás',name:'Kikötő',cost:6000,kind:PORT,mode:'single',sw:'#3a6f8f',hint:'Csak közvetlenül víz mellé építhető. 12 mezős körben a gyárak és az ipar 25%-kal többet termelnek, és megjelenik a Folyami kereskedő, aki sokat vesz és jól fizet az árukért. Áram és út kell hozzá. Fenntartás 60 Ft/hó.'},
   {id:'police',g:'Szolgáltatás',name:'Rendőrség',cost:500,kind:POLICE,mode:'single',sw:'#3b5ba8',hint:'Csökkenti a bűnözést 9 mezős körben. Fenntartás 35 Ft/hó.'},
   {id:'fire',g:'Szolgáltatás',name:'Tűzoltóság',cost:500,kind:FIRE,mode:'single',sw:'#c23b30',hint:'Megfékezi a tüzeket 9 mezős körben. Fenntartás 35 Ft/hó.'},
   {id:'hosp',g:'Szolgáltatás',name:'Kórház',cost:1000,kind:HOSP,mode:'single',sw:'#f2f2f2',hint:'Növeli a telekértéket a környéken. Fenntartás 55 Ft/hó.'},
@@ -700,8 +715,8 @@ const isBuilding=i=>{const k=S.kind[i];return (isZone(k)&&S.dens[i]>0)||(isFacil
 const conductor=k=>k!==0&&k!==RUBBLE;
 const onEdge=i=>{const x=i%N,y=(i/N)|0;return x===0||y===0||x===N-1||y===N-1};
 const hiTech=i=>S.kind[i]===IZ&&S.month>=HITECH_MONTH&&covEdu[i]>0.2;
-function cons(i){const k=S.kind[i];if(S.build[i])return 0;if(isZone(k))return S.dens[i]>0?(S.dens[i]+1)*OE.pow:0;if(k===METRO)return 10;if(k===WAREHOUSE)return 3;if(isFactory(k))return FPOW[k];if(isZone(k))return S.dens[i]>0?S.dens[i]+1:0;if(k>=POLICE&&k<=HOSP)return 5;if(k===PUMP||k===TREAT||k===RECYC)return 4;if(k===HALL)return 5;if(k===STADIUM||k===AMUSE)return 8;return 0}
-function wcons(i){const k=S.kind[i];if(S.build[i])return 0;if(isZone(k))return S.dens[i]>0?(S.dens[i]+1)*OE.wat:0;if(isFactory(k))return FWAT[k];if(isZone(k))return S.dens[i]>0?S.dens[i]+1:0;if(k===COAL)return 4;if(k>=POLICE&&k<=HOSP||k===HALL)return 3;if(k===STADIUM||k===AMUSE)return 4;return 0}
+function cons(i){const k=S.kind[i];if(S.build[i])return 0;if(isZone(k))return S.dens[i]>0?(S.dens[i]+1)*OE.pow*SE().pow*(isNight()?OE.powNight:1):0;if(k===METRO)return 10;if(k===PORT)return 5;if(k===WAREHOUSE)return 3;if(isFactory(k))return FPOW[k];if(isZone(k))return S.dens[i]>0?S.dens[i]+1:0;if(k>=POLICE&&k<=HOSP)return 5;if(k===PUMP||k===TREAT||k===RECYC)return 4;if(k===HALL)return 5;if(k===STADIUM||k===AMUSE)return 8;return 0}
+function wcons(i){const k=S.kind[i];if(S.build[i])return 0;if(isZone(k))return S.dens[i]>0?(S.dens[i]+1)*OE.wat*SE().wat:0;if(isFactory(k))return FWAT[k];if(isZone(k))return S.dens[i]>0?S.dens[i]+1:0;if(k===COAL)return 4;if(k>=POLICE&&k<=HOSP||k===HALL)return 3;if(k===STADIUM||k===AMUSE)return 4;return 0}
 function nb(i,f){const x=i%N,y=(i/N)|0;if(x>0)f(i-1);if(x<N-1)f(i+1);if(y>0)f(i-N);if(y<N-1)f(i+N)}
 
 function computePower(){
@@ -766,7 +781,7 @@ function cover(arr,k,R,needPow){arr.fill(0);
   for(let i=0;i<NN;i++){if(S.kind[i]!==k||(needPow&&!powered[i])||S.burn[i]||S.build[i])continue;const x0=i%N,y0=(i/N)|0;
     for(let dy=-R;dy<=R;dy++)for(let dx=-R;dx<=R;dx++){const x=x0+dx,y=y0+dy;if(x<0||y<0||x>=N||y>=N)continue;
       const dd=Math.hypot(dx,dy);if(dd>R)continue;const v=1-dd/(R+1),j=y*N+x;if(v>arr[j])arr[j]=v;}}}
-const traffic=new Float32Array(NN),cong=new Float32Array(NN),congNear=new Float32Array(NN),covBus=new Float32Array(NN),covMetro=new Float32Array(NN);
+const covPort=new Float32Array(NN),traffic=new Float32Array(NN),cong=new Float32Array(NN),congNear=new Float32Array(NN),covBus=new Float32Array(NN),covMetro=new Float32Array(NN);
 const ROADCAP=60;
 function computeTraffic(){traffic.fill(0);cong.fill(0);
   const near=new Int32Array(NN).fill(-1),dd=new Uint8Array(NN).fill(255),q=[];
@@ -774,7 +789,7 @@ function computeTraffic(){traffic.fill(0);cong.fill(0);
   for(let h=0;h<q.length;h++){const i=q[h];if(dd[i]>=3)continue;nb(i,j=>{if(dd[j]===255){dd[j]=dd[i]+1;near[j]=near[i];q.push(j)}})}
   for(let i=0;i<NN;i++){const k=S.kind[i],d=S.dens[i];let tr=0;
     if(k===RZ)tr=RPOP[d]*0.5;else if(k===CZ)tr=CJOB[d]*0.45;else if(k===IZ)tr=IJOB[d]*0.45;else if(SJOB[k]&&!S.build[i])tr=SJOB[k]*0.3;
-    if(!tr||near[i]<0)continue;traffic[near[i]]+=OE.traffic*tr*(1-Math.max(Math.min(0.45,covBus[i]*0.8),Math.min(0.7,covMetro[i]*1.1)))}
+    if(!tr||near[i]<0)continue;traffic[near[i]]+=OE.traffic*SE().traffic*tr*(1-Math.max(Math.min(0.45,covBus[i]*0.8),Math.min(0.7,covMetro[i]*1.1)))}
   let cur=traffic.slice();
   for(let it=0;it<4;it++){const nx=new Float32Array(NN);for(let i=0;i<NN;i++){if(S.kind[i]!==ROAD)continue;let s=cur[i],n=1;nb(i,j=>{if(S.kind[j]===ROAD){s+=cur[j];n++}});nx[i]=s/n}cur=nx}
   let sum=0,cnt=0,cr=0;
@@ -787,7 +802,7 @@ function spread(out,src,R){out.fill(0);
       const dd=Math.hypot(dx,dy);if(dd>R)continue;out[y*N+x]+=v*(1-dd/(R+1));}}}
 function recompute(){
   computePower();computeWater();computeAccess();
-  cover(covPol,POLICE,radOf(POLICE),true);cover(covFire,FIRE,radOf(FIRE),true);cover(covEdu,SCHOOL,radOf(SCHOOL),true);cover(covHosp,HOSP,radOf(HOSP),true);cover(covPark,PARK,3,false);cover(covHall,HALL,12,false);cover(covAmuse,AMUSE,15,false);cover(covStatue,STATUE,5,false);cover(covBus,BUS,radOf(BUS),false);cover(covMetro,METRO,radOf(METRO),true);computeTraffic();
+  cover(covPol,POLICE,radOf(POLICE),true);cover(covFire,FIRE,radOf(FIRE),true);cover(covEdu,SCHOOL,radOf(SCHOOL),true);cover(covHosp,HOSP,radOf(HOSP),true);cover(covPark,PARK,3,false);cover(covHall,HALL,12,false);cover(covAmuse,AMUSE,15,false);cover(covStatue,STATUE,5,false);cover(covBus,BUS,radOf(BUS),false);cover(covMetro,METRO,radOf(METRO),true);cover(covPort,PORT,radOf(PORT),true);computeTraffic();
   const sp=new Float32Array(NN), sc=new Float32Array(NN);
   for(let i=0;i<NN;i++){const k=S.kind[i],d=S.dens[i];
     if(k===IZ)sp[i]=d?(hiTech(i)?1+d:2+d*4):0;else if(k===COAL)sp[i]=has('filter')?14:30;else if(k===INCIN)sp[i]=24;else if(k===LANDFILL)sp[i]=9;else if(k===RECYC)sp[i]=1.5;else if(isFactory(k))sp[i]=FPOL[k];else if(k===CZ)sp[i]=d*1.5;else if(k===ROAD)sp[i]=0.3+Math.min(3,traffic[i]*0.03);
@@ -796,14 +811,14 @@ function recompute(){
     if(k===RZ)sc[i]=d*4;else if(k===CZ)sc[i]=d*5;else if(k===IZ)sc[i]=d*3;}
   spread(pol,sp,5);spread(crm,sc,3);
   for(let i=0;i<NN;i++){
-    pol[i]=Math.max(0,Math.min(100,pol[i]+sewPol[i]+(isBuilding(i)?T.gRatio*12:0)-(S.terrain[i]===TREE?4:0)-covPark[i]*14));
+    pol[i]=Math.max(0,Math.min(100,pol[i]*OE.polAll+sewPol[i]+(isBuilding(i)?T.gRatio*12:0)-(S.terrain[i]===TREE?4:0)-covPark[i]*14));
     crm[i]=Math.max(0,Math.min(100,crm[i]*0.9*OE.crime-covPol[i]*75));
     let tn=0;nb(i,j=>{if(S.terrain[j]===TREE||S.kind[j]===PARK)tn=1});
     land[i]=Math.max(0,Math.min(100,38+OE.land+waterNear[i]*16+covPark[i]*22+covEdu[i]*14+covHosp[i]*14+tn*5+covHall[i]*10+covAmuse[i]*12+covStatue[i]*4-pol[i]*0.55-crm[i]*0.45-Math.min(25,congNear[i])));
   }
   const stad=builtAny(STADIUM)?6:0;let ss=0,sw=0;
   for(let i=0;i<NN;i++){if(S.kind[i]!==RZ){sat[i]=0;continue}
-    let v=58+OE.sat+land[i]*0.25-pol[i]*0.25-crm[i]*0.3+covPol[i]*6+covFire[i]*6+covEdu[i]*8+covHosp[i]*8+covPark[i]*6+covHall[i]*10+covAmuse[i]*14+covStatue[i]*6+stad
+    let v=58+OE.sat+SE().sat+land[i]*0.25-pol[i]*0.25-crm[i]*0.3+covPol[i]*6+covFire[i]*6+covEdu[i]*8+covHosp[i]*8+covPark[i]*6+covHall[i]*10+covAmuse[i]*14+covStatue[i]*6+stad
       -Math.min(18,congNear[i]*0.8)-T.unemp*45-(S.taxR-8)*3-T.gRatio*25;
     if(S.dens[i]&&!powered[i])v-=15;
     sat[i]=Math.max(0,Math.min(100,v));const w=RPOP[S.dens[i]]||1;ss+=sat[i]*w;sw+=w}
@@ -811,11 +826,12 @@ function recompute(){
   dirty=false;
 }
 function totals(){let p=0,c=0,ind=0,sv=0,na=0;
-  for(let i=0;i<NN;i++){const k=S.kind[i],d=S.dens[i];if(k===RZ)p+=RPOP[d];else if(k===CZ)c+=CJOB[d];else if(k===IZ)ind+=IJOB[d];else if(SJOB[k]&&!S.burn[i]&&!S.build[i])sv+=SJOB[k];
+  for(let i=0;i<NN;i++){const k=S.kind[i],d=S.dens[i];if(k===RZ)p+=RPOP[d];else if(k===CZ)c+=CJOB[d];else if(k===IZ)ind+=IJOB[d]*(covPort[i]>0?1.25:1);else if(SJOB[k]&&!S.burn[i]&&!S.build[i])sv+=SJOB[k];
     if(isZone(k)&&!access[i])na++;}
   T.pop=p;T.jobsC=c;T.jobsI=ind;T.jobsS=sv;T.noAccess=na;
   const jobs=c+ind+sv, work=p*0.55, tk=v=>(v-8)*0.055;
   let wh=0;for(let i=0;i<NN;i++)if(S.kind[i]===WAREHOUSE&&!S.build[i]&&!S.burn[i]&&access[i])wh+=lvlMul(i);T.whN=wh;
+  {let po=0;for(let i=0;i<NN;i++)if(S.kind[i]===PORT&&!S.build[i]&&!S.burn[i]&&powered[i]&&access[i])po+=lvlMul(i);T.portOn=po>0;T.portMul=po}
   {const unempW=Math.max(0,work-jobs);let com=0;T.commuteBy={};
     for(const d of dirsWithRoad()){const free=nbJobs(d),q=Math.max(0,Math.min(Math.floor(unempW-com),free));T.commuteBy[d]=q;com+=q}
     T.commute=com}
@@ -823,11 +839,11 @@ function totals(){let p=0,c=0,ind=0,sv=0,na=0;
   const cl=v=>Math.max(-1,Math.min(1,v));
   T.demR=cl(OE.demR+(jobs+T.commute+50-work)/(work+50)-tk(S.taxR)+(T.sat-55)/120);
   const ct=p*0.22+12, it=p*0.3+30;
-  T.demC=cl(OE.demC+(ct-c)/ct-tk(S.taxC));
-  T.demI=cl(OE.demI+(it-ind)/it-tk(S.taxI));
+  T.demC=cl(OE.demC+SE().demC+(ct-c)/ct-tk(S.taxC));
+  T.demI=cl(OE.demI+(T.portOn?0.08:0)+(it-ind)/it-tk(S.taxI));
   let incCap=0,lfIn=0,lfN=0;for(let i=0;i<NN;i++){const k=S.kind[i];if(!GCAP[k]||!access[i]||S.burn[i]||S.build[i])continue;
     const lm=lvlMul(i);if(k===LANDFILL){lfIn+=GCAP[k]*lm;lfN+=lm}else if(powered[i])incCap+=gcapOf(k)*lm}
-  T.garbage=Math.round((p*0.05+c*0.04+ind*0.06)*OE.garb);const rdirs=dirsWithRoad();T.roadDirs=rdirs;T.roadEdge=rdirs.length>0;resetTr(['garb']);
+  T.garbage=Math.round((p*0.05+c*0.04+ind*0.06)*OE.garb);const rdirs=dirsWithRoad();T.roadDirs=rdirs;T.goodsDirs=T.portOn?[...rdirs,'p']:rdirs.slice();T.roadEdge=rdirs.length>0;resetTr(['garb']);
   const lfCap=lfN*lfSize(),lfStock=Math.min(S.lfStock||0,lfCap),lfFree=Math.max(0,lfCap-lfStock);
   const gm=S.trade.garb;let rem=T.garbage;
   const burnt=Math.min(rem,incCap);rem-=burnt;
@@ -858,7 +874,7 @@ function simMonth(){
       if(S.burn[i]>=4){S.burn[i]=0;destroyed++;S.ruin[i]=k;S.ruinD[i]=isZone(k)?S.dens[i]:(lvlOf(i)>1?lvlOf(i):0);S.lvl[i]=0;if(isZone(k))S.dens[i]=0;else{S.kind[i]=RUBBLE;S.dens[i]=0}dirty=true}
       continue;
     }
-    if(S.disasters&&S.month>=24&&isBuilding(i)&&R()<0.0011*OE.fire*(1-covFire[i]*0.9)){S.burn[i]=1;fires++;continue}
+    if(S.disasters&&S.month>=24&&isBuilding(i)&&R()<0.0011*OE.fire*SE().fire*(1-covFire[i]*0.9)){S.burn[i]=1;fires++;continue}
     if(!isZone(k))continue;
     const d=S.dens[i], ok=access[i]&&powered[i], dem=DEM(k);
     if(!ok){if(d>0&&R()<0.08)S.dens[i]--;continue}
@@ -889,6 +905,7 @@ function simMonth(){
   for(let i=0;i<NN;i++)if(S.build[i]){S.build[i]--;if(!S.build[i]){dirty=true;if((BUILD[S.kind[i]]||0)>=3)pushMsg(`Elkészült: ${KN[S.kind[i]]}. Mostantól működik.`,'good')}}
   recordHist();
   S.month++;
+  if([2,5,8,11].includes(S.month%12))pushMsg(SEASONMSG[seasonOf(S.month)]);
   if(fires)pushMsg(fires>1?`${fires} helyen tűz ütött ki!`:'Tűz ütött ki a városban!','warn');
   if(put)pushMsg('A tűzoltók megfékezték a tüzet.','good');
   if(destroyed)pushMsg(`A tűz ${destroyed} épületet elpusztított.`,'warn');
@@ -898,7 +915,7 @@ function simMonth(){
   checkMission();
   if(!S.hiTechMsg&&S.month>=HITECH_MONTH){for(let i=0;i<NN;i++)if(S.dens[i]&&hiTech(i)){S.hiTechMsg=1;pushMsg('Megjelent a high-tech ipar: az iskolák közelében tiszta, modern gyárak épülnek.','good');break}}
   if(S.month===HITECH_MONTH-12)pushMsg('Tóth Gergő (városfejlesztés): 1970-től az iskolák közelében high-tech ipar jelenhet meg, ami alig szennyez.');
-  if(S.disasters&&S.month>=36&&Math.random()<0.005)disaster(['flood','tornado','quake'][Math.floor(Math.random()*3)]);
+  if(S.disasters&&S.month>=36&&Math.random()<0.005){const w=[['flood',SE().flood],['tornado',seasonOf(S.month)==='winter'?0.4:1],['quake',1]],tot=w.reduce((a,x)=>a+x[1],0);let r=Math.random()*tot,pick='quake';for(const [n,v] of w){if(r<v){pick=n;break}r-=v}disaster(pick)}
   if(S.over){showGameOver();save(true);pushMsg('Csődbe ment a város. Vége a játéknak.','warn');return}
   updateAdvisors(S.month%6===0);
   mpWrite(false);
@@ -978,15 +995,16 @@ function renderMission(){const m=MISSIONS[S.mission],el=$('mission');
     `<div class="note">${S.mission+1}. küldetés a ${MISSIONS.length}-ből</div>`}
 
 /* ---------- szomszédok és piac ---------- */
-const DIRS=['n','e','s','w'];
-const DIRNAME={n:'Északi',e:'Keleti',s:'Déli',w:'Nyugati'};
-const ROBOTNAME={n:'Hegyesd',e:'Tóvár',s:'Kisberek',w:'Szélfalva'};
+const DIRS=['n','e','s','w'],ALLD=['n','e','s','w','p'];
+const DIRNAME={n:'Északi',e:'Keleti',s:'Déli',w:'Nyugati',p:'Folyami'};
+const ROBOTNAME={n:'Hegyesd',e:'Tóvár',s:'Kisberek',w:'Szélfalva',p:'Folyami kereskedő'};
 const RKEYS=['pow','wat','garb',...GKEYS];
 const RNAME={pow:'Áram',wat:'Víz',garb:'Szemét',flour:'Liszt',bread:'Kenyér',steel:'Acél',parts:'Alkatrész',cars:'Autó'};
 const RSCALE={pow:[50,90],wat:[70,90],garb:[30,80]};for(const g of GKEYS)RSCALE[g]=[GOODS[g].rd,GOODS[g].rs];
 function newMk(){return{m:1,dem:0,sup:0,hist:[1],ev:1,evLeft:0,f:+(0.5+Math.random()*0.9).toFixed(2)}}
 function fixNb(){S.nb=S.nb&&typeof S.nb==='object'?S.nb:{};
-  for(const d of DIRS){const n=S.nb[d]=S.nb[d]||{};if(!n.jf)n.jf=+(0.4+Math.random()).toFixed(2);if(n.jobs===undefined)n.jobs=Math.round(45*n.jf);if(n.allowBuy===undefined)n.allowBuy=true;if(n.allowSell===undefined)n.allowSell=true;n.mk=n.mk||{};for(const r of RKEYS){if(!n.mk[r])n.mk[r]=newMk();const k=n.mk[r];if(!k.dem&&!k.sup&&RSCALE[r]){k.dem=Math.round(RSCALE[r][0]*(k.f||1)*0.8);k.sup=Math.round(RSCALE[r][1]*(k.f||1)*0.8)}}}
+  for(const d of ALLD){const n=S.nb[d]=S.nb[d]||{};if(!n.jf)n.jf=+(0.4+Math.random()).toFixed(2);if(n.jobs===undefined)n.jobs=Math.round(45*n.jf);if(n.allowBuy===undefined)n.allowBuy=true;if(n.allowSell===undefined)n.allowSell=true;n.mk=n.mk||{};for(const r of RKEYS){if(!n.mk[r])n.mk[r]=newMk();const k=n.mk[r];if(!k.dem&&!k.sup&&RSCALE[r]){k.dem=Math.round(RSCALE[r][0]*(k.f||1)*0.8);k.sup=Math.round(RSCALE[r][1]*(k.f||1)*0.8)}}}
+  if(!S.nb.p.portInit){for(const r of RKEYS)S.nb.p.mk[r].f=+(1.6+Math.random()*0.6).toFixed(2);S.nb.p.jobs=0;S.nb.p.portInit=1}
   S.nbSlots=S.nbSlots&&typeof S.nbSlots==='object'?S.nbSlots:{};
   S.goods=S.goods&&typeof S.goods==='object'?S.goods:{};for(const g of GKEYS){S.goods[g]=Math.max(0,+S.goods[g]||0);if(!S.trade[g])S.trade[g]='auto'}
   S.mpLinks=Array.isArray(S.mpLinks)?S.mpLinks:[];S.mpBlock=Array.isArray(S.mpBlock)?S.mpBlock:[]}
@@ -1013,18 +1031,18 @@ function lim(d,r){const k=S.nb[d].mk[r];
   return{sup:k.sup,dem:k.dem}}
 function price(d,r,side){const b=BASEP[r],k=S.nb[d].mk[r];
   if(isPlayer(d))return Math.round((b.b+b.s)/2*(k.pm||1)*10)/10;
-  return Math.round(b[side]*k.m*10)/10}
+  return Math.round(b[side]*k.m*(d==='p'?(side==='s'?1.12:0.95):1)*10)/10}
 let TR={};
-function resetTr(rs){for(const d of DIRS){TR[d]=TR[d]||{};for(const r of rs)TR[d][r]={buy:0,sell:0}}}
+function resetTr(rs){for(const d of ALLD){TR[d]=TR[d]||{};for(const r of rs)TR[d][r]={buy:0,sell:0}}}
 const prefer=(r,side)=>(a,b)=>{const pa=isPlayer(a),pb=isPlayer(b);if(pa!==pb)return pa?-1:1;const x=price(a,r,side),y=price(b,r,side);return side==='b'?x-y:y-x};
-function buyFrom(r,dirs,want){let got=0;want=Math.floor(want);if(want<=0)return 0;
+function buyFrom(r,dirs,want){let got=0;want=Math.ceil(want-1e-9);if(want<=0)return 0;
   for(const d of dirs.filter(d=>S.nb[d].allowBuy).sort(prefer(r,'b'))){const q=Math.max(0,Math.min(want-got,Math.floor(lim(d,r).sup-TR[d][r].buy)));if(q>0){TR[d][r].buy+=q;got+=q}if(got>=want)break}
   return got}
 function sellTo(r,dirs,amount){let out=0;amount=Math.floor(amount);if(amount<=0)return 0;
   for(const d of dirs.filter(d=>S.nb[d].allowSell).sort(prefer(r,'s'))){const q=Math.max(0,Math.min(amount-out,Math.floor(lim(d,r).dem-TR[d][r].sell)));if(q>0){TR[d][r].sell+=q;out+=q}if(out>=amount)break}
   return out}
 function tradeTotals(){let inc=0,exp=0;const per={};
-  for(const d of DIRS){per[d]=0;for(const r of RKEYS){const t=TR[d]&&TR[d][r];if(!t)continue;const a=t.sell*price(d,r,'s'),b=t.buy*price(d,r,'b');inc+=a;exp+=b;per[d]+=a-b}}
+  for(const d of ALLD){per[d]=0;for(const r of RKEYS){const t=TR[d]&&TR[d][r];if(!t)continue;const a=t.sell*price(d,r,'s'),b=t.buy*price(d,r,'b');inc+=a;exp+=b;per[d]+=a-b}}
   return{inc,exp,per}}
 const edgeTile=(d,n)=>d==='n'?n:d==='s'?(N-1)*N+n:d==='w'?n*N:n*N+N-1;
 const dirsWithRoad=()=>DIRS.filter(d=>{for(let n=0;n<N;n++)if(S.kind[edgeTile(d,n)]===ROAD)return true;return false});
@@ -1040,8 +1058,8 @@ function myOfferFor(d){const tm=S.trade,can=(m,side)=>m==='auto'||m===side,n=S.n
   return o}
 function marketMonth(){
   resetMan();
-  for(const d of DIRS){const n=S.nb[d];
-    if(!n.jf)n.jf=+(0.4+Math.random()).toFixed(2);n.jobs=Math.round(45*n.jf*(0.6+Math.random()*0.8)*(1+Math.min(2,S.month/240)));
+  for(const d of ALLD){const n=S.nb[d];
+    if(!n.jf)n.jf=+(0.4+Math.random()).toFixed(2);n.jobs=d==='p'?0:Math.round(45*n.jf*(0.6+Math.random()*0.8)*(1+Math.min(2,S.month/240)));
     for(const r of RKEYS){const k=n.mk[r];
       if(isPlayer(d)){const th=theirOffer(d,r),mine=sentOffer(d,r);
         k.pm=Math.max(0.4,Math.min(2.5,Math.sqrt((th.def+mine.def+30)/(th.sur+mine.sur+30))));k.hist.push(+k.pm.toFixed(2));if(k.hist.length>24)k.hist.shift();continue}
@@ -1050,13 +1068,13 @@ function marketMonth(){
       if(EVENTS[r]&&Math.random()<0.012){const ev=EVENTS[r][Math.random()<0.5?0:1];k.m+=ev[0];k.ev=ev[2];k.evLeft=4+Math.floor(Math.random()*5);
         if(nbConnected(d,r))pushMsg(`${ROBOTNAME[d]} (${DIRNAME[d].toLowerCase()} szomszéd): ${ev[1]}`)}
       k.m=Math.max(0.4,Math.min(2.5,k.m));
-      const sd=RSCALE[r][0],ss=RSCALE[r][1],f=k.f||1;
+      const sd=RSCALE[r][0],ss=RSCALE[r][1],f=(k.f||1)*(d==='p'?Math.max(1,T.portMul||1):1);
       const dem=sd*f*(0.4+Math.random()*0.9)*(0.4+k.m*0.6)*k.ev,sup=ss*f*(1.7-k.m*0.6)*(0.5+Math.random()*0.7)/(k.ev>1?2:1);
       k.dem=r==='cars'?Math.floor(dem+Math.random()):Math.round(Math.max(0,dem));k.sup=r==='cars'?Math.floor(sup+Math.random()):Math.round(Math.max(0,sup));
       k.hist.push(+k.m.toFixed(2));if(k.hist.length>24)k.hist.shift()}}}
-let MAN={};function resetMan(){MAN={};for(const d of DIRS){MAN[d]={};for(const r of RKEYS)MAN[d][r]={buy:0,sell:0}}}resetMan();
+let MAN={};function resetMan(){MAN={};for(const d of ALLD){MAN[d]={};for(const r of RKEYS)MAN[d][r]={buy:0,sell:0}}}resetMan();
 function manualTrade(g,side,q){if(S.over)return;
-  const rd=(T.roadDirs||[]).filter(d=>!isPlayer(d)&&(side==='sell'?S.nb[d].allowSell:S.nb[d].allowBuy));
+  const rd=(T.goodsDirs||T.roadDirs||[]).filter(d=>!isPlayer(d)&&(side==='sell'?S.nb[d].allowSell:S.nb[d].allowBuy));
   if(!rd.length)return pushMsg('Kézi kereskedéshez út kell valamelyik gépi szomszéd felé, és nála engedélyezve kell lennie a vételnek vagy eladásnak.','warn');
   const G=S.goods;let left=side==='sell'?Math.min(q==='all'?G[g]:q,G[g]):Math.min(q,Math.max(0,goodsCap(g)-G[g]));
   if(left<=0)return pushMsg(side==='sell'?'Nincs mit eladni ebből az áruból.':'Megtelt a raktár ebből az áruból. Építs raktárat.','warn');
@@ -1074,16 +1092,16 @@ const DOMP={bread:2.4,cars:250};
 const domDemand=g=>g==='bread'?Math.round(T.pop*0.04):g==='cars'?Math.floor(T.pop*0.0015):0;
 function factoryState(i){if(S.build[i])return 'épül';if(S.burn[i])return 'ég';if(!powered[i])return 'nincs áram';if(!access[i])return 'nincs út';return 'működik'}
 function produceMonth(){
-  resetTr(GKEYS);const rd=T.roadDirs||[],G=S.goods,z=()=>Object.fromEntries(GKEYS.map(g=>[g,0]));
+  resetTr(GKEYS);const rd=T.goodsDirs||T.roadDirs||[],G=S.goods,z=()=>Object.fromEntries(GKEYS.map(g=>[g,0]));
   const prod=z(),used=z(),bought=z(),sold=z(),dom=z(),short=z();
-  const cnt={},cntN={};for(let i=0;i<NN;i++){const k=S.kind[i];if(isFactory(k)&&factoryState(i)==='működik'){cnt[k]=(cnt[k]||0)+lvlMul(i);cntN[k]=(cntN[k]||0)+1}}
+  const cnt={},cntN={};for(let i=0;i<NN;i++){const k=S.kind[i];if(isFactory(k)&&factoryState(i)==='működik'){cnt[k]=(cnt[k]||0)+lvlMul(i)*(covPort[i]>0?1.25:1);cntN[k]=(cntN[k]||0)+1}}
   T.factories=cntN;
   for(const k of [MILL,STEELW,BAKERY,PARTSF,CARF]){const n=cnt[k]||0;if(!n)continue;const rc=RECIPE[k];let ratio=1;
     if(rc.in){for(const g in rc.in){const need=rc.in[g]*n;
         if(G[g]<need){const m=S.trade[g];if(m==='buy'||m==='auto'){const got=buyFrom(g,rd,need-G[g]);G[g]+=got;bought[g]+=got}}
         if(G[g]<need)short[g]+=need-G[g];ratio=Math.min(ratio,need?G[g]/need:1)}
       for(const g in rc.in){const u=Math.floor(rc.in[g]*n*ratio);G[g]-=u;used[g]+=u}}
-    for(const g in rc.out){const q=Math.floor(rc.out[g]*n*ratio),add=Math.max(0,Math.min(q,goodsCap(g)-G[g]));G[g]+=add;prod[g]+=add}}
+    for(const g in rc.out){const q=Math.floor(rc.out[g]*n*ratio*(k===MILL?SE().mill:1)),add=Math.max(0,Math.min(q,goodsCap(g)-G[g]));G[g]+=add;prod[g]+=add}}
   for(const g of ['bread','cars']){const d=Math.min(G[g],domDemand(g));G[g]-=d;dom[g]=d}
   const avail={};
   for(const g of GKEYS){const m=S.trade[g];let reserve=0;
@@ -1147,11 +1165,13 @@ function disaster(type){
 function nbList(i){const r=[];nb(i,j=>r.push(j));return r}
 
 /* ---------- építés ---------- */
+function nearWater1(i){let w=false;nb(i,j=>{if(S.terrain[j]===WATER)w=true});return w&&S.terrain[i]!==WATER}
 function costAt(t,i){
   const k=S.kind[i];
   if(t.rank&&S.rank<t.rank)return null;
   if(t.unique&&S.kind.includes(t.kind))return null;
   if(t.tech&&!has(t.tech))return null;
+  if(t.kind===PORT&&!nearWater1(i))return null;
   if(t.id==='pipe')return S.pipe[i]?null:(S.terrain[i]===WATER?15:5);
   if(t.id==='bull'){if(overlay==='water')return S.pipe[i]?3:null;if(k)return isFacility(k)?50:5;if(S.terrain[i]===TREE)return 3;return null}
   if(k)return null;
@@ -1160,6 +1180,7 @@ function costAt(t,i){
 }
 let moneyWarnAt=0;
 function applyTiles(t,list){
+  if(t.kind===PORT&&list.length===1&&!S.kind[list[0]]&&!nearWater1(list[0])){pushMsg('A kikötőt közvetlenül víz mellé kell építeni.','warn');return}
   if(S.over)return;
   if(t.tech&&!has(t.tech)){pushMsg(`${t.name}: előbb ki kell kutatni (${TECH[t.tech].name}).`,'warn');return}
   if(t.rank&&S.rank<t.rank){pushMsg(`${t.name}: ${TITLES[t.rank][1]} rangtól építhető (${fmtN(TITLES[t.rank][0])} lakos).`,'warn');return}
@@ -1219,7 +1240,7 @@ function roof(cx,cy,s,h,rh,col){const hw=HW*s,hh=HH*s,ay=cy-h-rh,t=cy-h;
   const tri=(p,q,c)=>{ctx.fillStyle=c;ctx.beginPath();ctx.moveTo(p[0],p[1]);ctx.lineTo(q[0],q[1]);ctx.lineTo(A[0],A[1]);ctx.fill()};
   tri(L,Tp,shade(col,1.05));tri(Tp,Rt,shade(col,.9));tri(L,B,shade(col,.8));tri(B,Rt,shade(col,.62))}
 function tree(x,y,r,dark){ctx.fillStyle='#5b4330';ctx.fillRect(x-1,y-r*0.6,2,r*0.8);
-  ctx.fillStyle=dark?'#2f6b2f':'#3c7d34';ctx.beginPath();ctx.ellipse(x,y-r*1.1,r*0.75,r,0,0,7);ctx.fill();
+  {const se=seasonOf(S.month);ctx.fillStyle=se==='winter'?(dark?'#c9d6de':'#e6edf1'):se==='autumn'?(dark?'#b5582a':'#d08a30'):se==='spring'?(dark?'#3f8a3a':'#5aa648'):(dark?'#2f6b2f':'#3c7d34')}ctx.beginPath();ctx.ellipse(x,y-r*1.1,r*0.75,r,0,0,7);ctx.fill();
   ctx.fillStyle='rgba(255,255,255,.12)';ctx.beginPath();ctx.ellipse(x-r*0.25,y-r*1.4,r*0.3,r*0.4,0,0,7);ctx.fill()}
 function smoke(x,y,t,seed,big){for(let k=0;k<4;k++){const p=(((t*0.35+k/4+seed)%1)+1)%1;
   ctx.fillStyle=`rgba(200,200,200,${0.5*(1-p)})`;ctx.beginPath();ctx.arc(x+p*10*(big?1.4:1),y-p*34,2.5+p*(big?9:6),0,7);ctx.fill()}}
@@ -1232,13 +1253,13 @@ const pal={
 const pick=(a,h)=>a[Math.floor(h*a.length)%a.length];
 function bHeight(i){const k=S.kind[i],d=S.dens[i];
   if(k===RZ)return [0,16,26,56][d];if(k===CZ)return [0,13,34,74][d];if(k===IZ)return [0,11,17,22][d];
-  return {31:16,32:8,33:12,26:30,27:14,28:24,29:16,30:20,24:5,25:46,23:40,6:22,7:52,8:17,9:17,10:15,11:29,14:24,15:10,16:6,17:20,18:14,19:20,20:32,21:12,22:48}[k]||0}
+  return {34:14,31:16,32:8,33:12,26:30,27:14,28:24,29:16,30:20,24:5,25:46,23:40,6:22,7:52,8:17,9:17,10:15,11:29,14:24,15:10,16:6,17:20,18:14,19:20,20:32,21:12,22:48}[k]||0}
 
 function drawGround(x,y,cx,cy,t){
   const i=y*N+x,k=S.kind[i],ter=S.terrain[i];
   if(ter===WATER){ctx.fillStyle=(x+y)%2?'#3a7db6':'#3b80ba';dia(cx,cy,1.03);ctx.fill();
     const h=hash(x,y,7);if(h<0.35){const p=(t*0.25+h*3)%1;ctx.strokeStyle=`rgba(255,255,255,${0.35*Math.sin(p*Math.PI)})`;ctx.lineWidth=1.2;ctx.beginPath();ctx.moveTo(cx-8+p*6,cy-2);ctx.lineTo(cx+2+p*6,cy+3);ctx.stroke()}}
-  else{ctx.fillStyle=grassCol[i];dia(cx,cy,1.03);ctx.fill()}
+  else{ctx.fillStyle=grassCol[i];dia(cx,cy,1.03);ctx.fill();const se=seasonOf(S.month);if(se==='winter'){ctx.fillStyle='rgba(242,246,250,.66)';ctx.fill()}else if(se==='autumn'){ctx.fillStyle='rgba(196,128,44,.2)';ctx.fill()}else if(se==='spring'){ctx.fillStyle='rgba(150,220,120,.08)';ctx.fill()}}
   if(k===ROAD){
     const w=0.3;const asph=ter===WATER?'#6a6058':'#555b62';ctx.fillStyle=asph;
     quad(cx,cy,-w,w,-w,w);ctx.fill();
@@ -1371,6 +1392,14 @@ function drawObject(x,y,cx,cy,t){
     if(((t*0.15+h)%1)<0.45){ctx.fillStyle='#e0b020';ctx.fillRect(cx-16,cy+2,16,6);ctx.fillStyle='#bfe0f2';ctx.fillRect(cx-15,cy+3,14,2)}}
   else if(k===METRO){box(cx,cy+2,.6,11,'#d8dde2');ctx.fillStyle='#2f5fb0';ctx.beginPath();ctx.arc(cx,cy-18,6,0,7);ctx.fill();ctx.fillStyle='#fff';ctx.font='bold 8px system-ui,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('M',cx,cy-17.6);ctx.textAlign='start';ctx.textBaseline='alphabetic';
     ctx.strokeStyle='#777';ctx.lineWidth=1.2;ctx.beginPath();ctx.moveTo(cx,cy-12);ctx.lineTo(cx,cy-9);ctx.stroke()}
+  else if(k===PORT){let wd=[0,0];for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){const X=x+dx,Y=y+dy;if(X>=0&&Y>=0&&X<N&&Y<N&&S.terrain[Y*N+X]===WATER){wd=[dx,dy];break}}
+    ctx.fillStyle='#8a6a48';if(wd[0])quad(cx,cy,0,0.95*wd[0],-0.14,0.14);else quad(cx,cy,-0.14,0.14,0,0.95*wd[1]);ctx.fill();
+    box(cx-6,cy+2,.42,12,'#9aa7b0');box(cx-4,cy-6,.22,5,'#c0453a');
+    ctx.strokeStyle='#d8a020';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(cx+9,cy+3);ctx.lineTo(cx+9,cy-30);ctx.lineTo(cx-7,cy-30);ctx.stroke();
+    const sw=Math.sin(t*1.2+h*5)*3;ctx.strokeStyle='#555';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(cx-5+sw,cy-30);ctx.lineTo(cx-5+sw,cy-18);ctx.stroke();
+    const sp=P(cx,cy,0.95*wd[0],0.95*wd[1]);const bob=Math.sin(t*1.5+h*3)*0.8;
+    ctx.fillStyle='#7a2f2a';ctx.beginPath();ctx.moveTo(sp[0]-14,sp[1]+bob);ctx.lineTo(sp[0]+14,sp[1]+bob);ctx.lineTo(sp[0]+10,sp[1]+6+bob);ctx.lineTo(sp[0]-12,sp[1]+6+bob);ctx.closePath();ctx.fill();
+    for(let q=0;q<3;q++){ctx.fillStyle=['#2f6fc0','#d9913a','#3e9447'][q];ctx.fillRect(sp[0]-10+q*7,sp[1]-5+bob,6,5)}}
   else if(k===HOSP){box(cx,cy,.76,29,'#eef0f0');windows(cx,cy,.76,29,4,'rgba(110,160,190,.7)');const ty=cy-29;ctx.strokeStyle='#d33';ctx.lineWidth=3.2;ctx.beginPath();ctx.moveTo(cx-9,ty-4.5);ctx.lineTo(cx+9,ty+4.5);ctx.moveTo(cx+9,ty-4.5);ctx.lineTo(cx-9,ty+4.5);ctx.stroke()}
   if(burning){const bh=bHeight(i);for(let f=0;f<5;f++){const a=hash(x,y,f+40),fl=Math.sin(t*12+f*2)*4;
     ctx.fillStyle=f%2?'rgba(255,170,30,.9)':'rgba(240,80,20,.9)';const fx=cx-14+a*28,fy=cy-bh*0.5+a*6;
@@ -1570,22 +1599,22 @@ $('chClose').onclick=closeChart;$('chartModal').addEventListener('click',e=>{if(
 window.addEventListener('resize',()=>{if($('chartModal').hidden===false)drawChart()});
 
 function renderNeighbors(){const el=$('nbCards');if(!el)return;nbSweep();
-  el.innerHTML=DIRS.map(d=>{const n=S.nb[d],pl=isPlayer(d);
-    const chips=[['Áram',(T.connPow||{})[d]],['Víz',(T.connWat||{})[d]],['Út',(T.roadDirs||[]).includes(d)]].map(([l,on])=>`<span class="chip ${on?'on':''}">${l}${on?' ✓':''}</span>`).join('');
+  el.innerHTML=(T.portOn?ALLD:DIRS).map(d=>{const n=S.nb[d],pl=isPlayer(d);
+    const chips=d==='p'?'<span class="chip on">Kikötő ✓</span><span class="chip">csak áruk</span>':[['Áram',(T.connPow||{})[d]],['Víz',(T.connWat||{})[d]],['Út',(T.roadDirs||[]).includes(d)]].map(([l,on])=>`<span class="chip ${on?'on':''}">${l}${on?' ✓':''}</span>`).join('');
     const lines=RKEYS.map(r=>{const t=TR[d]&&TR[d][r];if(!t||(!t.buy&&!t.sell))return '';const u=BASEP[r].unit;
       const lb=r==='garb'?'elvitet':'vesz',ls=r==='garb'?'átvesz':'elad';
       return t.buy?`<li><b>${RNAME[r]}</b>: ${lb} ${fmtN(t.buy)} ${u} · −${fmtN(t.buy*price(d,r,'b'))} Ft</li>`:`<li><b>${RNAME[r]}</b>: ${ls} ${fmtN(t.sell)} ${u} · +${fmtN(t.sell*price(d,r,'s'))} Ft</li>`}).join('');
-    const pr=['pow','wat'].map(r=>`${RNAME[r].toLowerCase()} ${fmtP(price(d,r,'b'))}/${fmtP(price(d,r,'s'))}`).join(' · ');
+    const pr=(d==='p'?['bread','cars']:['pow','wat']).map(r=>`${RNAME[r].toLowerCase()} ${fmtP(price(d,r,'b'))}/${fmtP(price(d,r,'s'))}`).join(' · ');
     return `<div class="nbcard ${pl?'pl':''}"><div class="nbh"><b>${DIRNAME[d]}: ${esc(nbName(d))}</b><span>${pl?'játékos':'gépi'}</span></div>`+
       `<div class="chips">${chips}</div>`+
       `<div class="nbt"><button data-nbt="buy" data-d="${d}" aria-pressed="${!!n.allowBuy}">Veszünk tőle</button><button data-nbt="sell" data-d="${d}" aria-pressed="${!!n.allowSell}">Eladunk neki</button></div>`+
-      `<ul class="nbl">${lines||'<li>Előző hónapban nem volt forgalom.</li>'}${(T.commuteBy||{})[d]?`<li><b>Ingázók</b>: ${fmtN(T.commuteBy[d])} lakosod dolgozik itt</li>`:''}<li>Szabad munkahely nála: ${fmtN(nbJobs(d))}${(T.roadDirs||[]).includes(d)?'':' (út kell az ingázáshoz)'}</li></ul>`+
+      `<ul class="nbl">${lines||'<li>Előző hónapban nem volt forgalom.</li>'}${(T.commuteBy||{})[d]?`<li><b>Ingázók</b>: ${fmtN(T.commuteBy[d])} lakosod dolgozik itt</li>`:''}${d==='p'?'':`<li>Szabad munkahely nála: ${fmtN(nbJobs(d))}${(T.roadDirs||[]).includes(d)?'':' (út kell az ingázáshoz)'}</li>`}</ul>`+
       `<div class="note">Ár, vétel/eladás: ${pr} Ft${pl?' (közös ár)':''}</div></div>`}).join('')}
-function bestPrices(g){const rd=T.roadDirs||[],ds=rd.length?rd:DIRS;let b=Infinity,s=0;for(const d of ds){b=Math.min(b,price(d,g,'b'));s=Math.max(s,price(d,g,'s'))}return{b:fmtP(b),s:fmtP(s),conn:rd.length>0}}
+function bestPrices(g){const rd=T.goodsDirs||T.roadDirs||[],ds=rd.length?rd:DIRS;let b=Infinity,s=0;for(const d of ds){b=Math.min(b,price(d,g,'b'));s=Math.max(s,price(d,g,'s'))}return{b:fmtP(b),s:fmtP(s),conn:rd.length>0}}
 function renderGoods(){const el=$('goodsList');if(!el)return;const gd=T.gd||{};
   el.innerHTML=GKEYS.map(g=>{const G=GOODS[g],m=S.trade[g],v=k=>fmtN(((gd[k]||{})[g])||0),bp=bestPrices(g);
     const segs=['off','buy','sell','auto'].map(x=>`<button data-g="${g}" data-m="${x}" aria-pressed="${m===x}">${{off:'Raktároz',buy:'Vesz',sell:'Elad',auto:'Automata'}[x]}</button>`).join('');
-    const offers=(T.roadDirs||[]).filter(d=>!isPlayer(d)).map(d=>{const k=S.nb[d].mk[g];return `${ROBOTNAME[d]}: vesz ${fmtN(Math.max(0,k.dem-MAN[d][g].sell))} db × ${fmtP(price(d,g,'s'))} · ad ${fmtN(Math.max(0,k.sup-MAN[d][g].buy))} db × ${fmtP(price(d,g,'b'))} Ft`}).join('<br>');
+    const offers=(T.goodsDirs||T.roadDirs||[]).filter(d=>!isPlayer(d)).map(d=>{const k=S.nb[d].mk[g];return `${ROBOTNAME[d]}: vesz ${fmtN(Math.max(0,k.dem-MAN[d][g].sell))} db × ${fmtP(price(d,g,'s'))} · ad ${fmtN(Math.max(0,k.sup-MAN[d][g].buy))} db × ${fmtP(price(d,g,'b'))} Ft`}).join('<br>');
     const dom=g==='bread'||g==='cars'?`<span>lakók vettek ${v('dom')} (${fmtN(domDemand(g))} kell)</span>`:'';
     const sh=(gd.short||{})[g]?`<span class="warn">hiányzott ${v('short')}</span>`:'';
     return `<li><div class="th"><b>${G.n}</b><span>készlet ${fmtN(S.goods[g])} / ${fmtN(goodsCap(g))}</span></div>`+
@@ -1634,7 +1663,7 @@ function recordHist(){let pr=0,cr=0,n=0;for(let i=0;i<NN;i++)if(S.kind[i]===RZ&&
 const mLabel=m=>`${1950+Math.floor(m/12)}. ${MONTHS[m%12]}`;
 const fmtV=(v,u)=>(u==='%'?String(Math.round(v*10)/10).replace('.',','):fmtN(v))+(u?' '+u:'');
 function renderOrds(){const ul=$('ordList');if(!ul)return;
-  ul.innerHTML=ORDS.map(o=>{const on=!!S.ord[o.id];return `<li class="${on?'on':''}"><div class="th"><b>${o.n}</b><span>${fmtN(ordCostOf(o))} Ft/hó${o.per?' *':''}</span></div><p>${o.d}</p><button data-ord="${o.id}" aria-pressed="${on}">${on?'Bekapcsolva':'Kikapcsolva'}</button></li>`}).join('');
+  ul.innerHTML=ORDS.map(o=>{const on=!!S.ord[o.id];return `<li class="${on?'on':''}"><div class="th"><b>${o.n}</b><span>${fmtN(ordCostOf(o))} Ft/hó${o.per?' *':''}</span></div><p><b class="pro">+</b> ${o.pro}</p><p><b class="con">−</b> ${o.con}</p><button data-ord="${o.id}" aria-pressed="${on}">${on?'Bekapcsolva':'Kikapcsolva'}</button></li>`}).join('');
   $('ordCost').textContent=fmtN(ordCost())+' Ft/hó'}
 function sparkSvg(vals){const w=88,h=24;if(vals.length<2)return `<svg width="${w}" height="${h}" aria-hidden="true"></svg>`;let lo=Math.min(...vals),hi=Math.max(...vals);if(hi===lo){hi+=1;lo-=1}
   const pts=vals.map((v,i)=>`${(1+i/(vals.length-1)*(w-6)).toFixed(1)},${(2+(hi-v)/(hi-lo)*(h-4)).toFixed(1)}`).join(' '),last=pts.split(' ').pop().split(',');
@@ -1676,7 +1705,7 @@ function drawChart(){const svg=$('chSvg'),wrap=$('chWrap'),tip=$('chTip');tip.hi
 function openChart(k){CH.k=k;$('chMetric').innerHTML=HM.map(h=>`<button data-k="${h.k}">${h.n}</button>`).join('');$('chartModal').hidden=false;drawChart()}
 function closeChart(){$('chartModal').hidden=true}
 function hud(){
-  $('sDate').textContent=`${1950+Math.floor(S.month/12)}. ${MONTHS[S.month%12]}`;$('sPhase').textContent=isNight()?'☾ éjszaka':'☀ nappal';
+  $('sDate').textContent=`${1950+Math.floor(S.month/12)}. ${MONTHS[S.month%12]}`;$('sPhase').textContent=(isNight()?'☾ éjszaka':'☀ nappal')+' · '+SE().n;
   const m=$('sMoney');m.textContent=fmtN(S.money)+' Ft';m.classList.toggle('neg',S.money<0);
   $('sPop').textContent=fmtN(T.pop);
   const bal=(id,cap,need,unit)=>{const b=Math.round(cap-need),e=$(id);e.textContent=(b>0?'+':b<0?'−':'±')+fmtN(Math.abs(b))+(unit?' '+unit:'');
@@ -1721,7 +1750,7 @@ function renderNews(){$('news').innerHTML=news.map(n=>`<li><b>${n.d}</b>${n.text
 
 let inspected=null;
 function meter(label,v,col){return `<div class="row"><span>${label}</span><span class="v">${Math.round(v)}</span></div><div class="meter"><i style="width:${Math.max(0,Math.min(100,v))}%;background:${col}"></i></div>`}
-const UPG=new Set([COAL,WIND,SOLAR,NUKE,PUMP,TREAT,TOWER,LANDFILL,INCIN,RECYC,MILL,BAKERY,STEELW,PARTSF,CARF,WAREHOUSE]);
+const UPG=new Set([PORT,COAL,WIND,SOLAR,NUKE,PUMP,TREAT,TOWER,LANDFILL,INCIN,RECYC,MILL,BAKERY,STEELW,PARTSF,CARF,WAREHOUSE]);
 function upgCost(k,L){const t=TOOLS.find(x=>x.kind===k);return Math.round((t?t.cost:1000)*0.35*Math.pow(1.10,L-1)/10)*10}
 function outText(i,L){const k=S.kind[i],m=1+LVLSTEP*(L-1),r=v=>fmtN(Math.round(v)),gn=g=>GOODS[g].n.toLowerCase();
   if(k===SOLAR)return `${r((has('solar2')?60:40)*m)} MW nappal`;
@@ -1734,6 +1763,7 @@ function outText(i,L){const k=S.kind[i],m=1+LVLSTEP*(L-1),r=v=>fmtN(Math.round(v
   if(k===RECYC)return `${r(gcapOf(k)*m)} szemét/hó`;
   if(isFactory(k)){const rc=RECIPE[k];return Object.entries(rc.out).map(([g,q])=>`${r(q*m)} ${gn(g)}`).join(', ')+'/hó'+(rc.in?` (kell: ${Object.entries(rc.in).map(([g,q])=>`${r(q*m)} ${gn(g)}`).join(' + ')})`:'')}
   if(k===WAREHOUSE)return `+${r(GOODS.bread.capW*m)} kenyér, +${r(GOODS.cars.capW*m)} autó hely`;
+  if(k===PORT)return `folyami kereskedő forgalma ${r(100*m)}%`;
   return ''}
 function upgrade(i,quiet){const k=S.kind[i],L=lvlOf(i);if(!UPG.has(k)||S.build[i]||S.burn[i]||L>=MAXLVL||S.over)return 0;
   const c=upgCost(k,L);if(S.money<c){if(!quiet)pushMsg('Nincs elég pénz a fejlesztésre.','warn');return 0}
