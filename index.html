@@ -62,6 +62,10 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 .stat .v.pos{color:var(--ok)}
 .stat .d{font-family:var(--font-num);font-size:10.5px;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
 .stat.util{cursor:help}
+.stat.stock{cursor:pointer;border:0;background:transparent;padding:0;text-align:left;font:inherit;color:inherit}
+.stat.stock:hover .l{color:var(--accent)}
+.stat .v.sm{font-size:12.5px;font-weight:600}
+.stat .v .full{color:var(--danger)}
 .tbtop{display:flex;align-items:center;gap:10px}
 .tbtop #hint{flex:1;min-width:0}
 .probbtn{border-color:var(--danger)!important;color:var(--danger)}
@@ -293,6 +297,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
       <div class="stat util" title="Kapacitás mínusz igény. Alatta: kapacitás / igény. A szomszédtól vett víz beleszámít."><span class="l">Víz</span><span class="v" id="uWat">–</span><span class="d" id="uWatD"></span></div>
       <div class="stat util" title="Tisztítókapacitás mínusz keletkező szennyvíz. Alatta: kapacitás / keletkező."><span class="l">Szennyvíz</span><span class="v" id="uSew">–</span><span class="d" id="uSewD"></span></div>
       <div class="stat util" title="Feldolgozó kapacitás (plusz amit a szomszéd elvisz) mínusz keletkező szemét. Alatta: kapacitás / keletkező."><span class="l">Szemét</span><span class="v" id="uGarb">–</span><span class="d" id="uGarbD"></span></div>
+      <button class="stat util stock" id="stockStat" type="button" title="Árukészlet. Kattints a részletekért (Gyártás fül)."><span class="l">Készlet</span><span class="v sm" id="uStock">–</span><span class="d" id="uStockD"></span></button>
     </div>
     <button class="hallbtn helpbtn" id="helpBtn" title="Útmutató: mi mire való" aria-label="Útmutató">?</button>
     <button class="hallbtn" id="hallBtn" aria-pressed="true">Városháza</button>
@@ -1640,6 +1645,7 @@ function showPanel(on){panel.hidden=!on;hallBtn.setAttribute('aria-pressed',on)}
 hallBtn.onclick=()=>{showPanel(panel.hidden);hud()};
 showPanel(window.innerWidth>760);
 $('homeBtn').onclick=()=>centerCam();
+$('stockStat').onclick=()=>{showPanel(true);const b=document.querySelector('.tabs button[data-tab="prod"]');if(b)b.click()};
 $('ordList').addEventListener('click',e=>{const b=e.target.closest('button[data-ord]');if(!b)return;const id=b.dataset.ord,o=ORDS.find(x=>x.id===id);S.ord[id]=!S.ord[id];calcOE();recompute();totals();hud();
   pushMsg(`${o.n}: ${S.ord[id]?'bekapcsolva':'kikapcsolva'}${S.ord[id]?` (${fmtN(ordCostOf(o))} Ft/hó)`:''}.`,S.ord[id]?'good':'')});
 $('sparkList').addEventListener('click',e=>{const b=e.target.closest('button[data-chart]');if(b)openChart(b.dataset.chart)});
@@ -1856,6 +1862,10 @@ function hud(){
   const bal=(id,cap,need,unit)=>{const b=Math.round(cap-need),e=$(id);e.textContent=(b>0?'+':b<0?'−':'±')+fmtN(Math.abs(b))+(unit?' '+unit:'');
     e.classList.toggle('neg',b<0);e.classList.toggle('pos',b>0);$(id+'D').textContent=`${fmtN(cap)} / ${fmtN(need)}`};
   bal('uPow',T.supply,T.need,'MW');bal('uWat',T.wSupply,T.wNeed,'');bal('uSew',T.treatCap||0,T.sewage,'');bal('uGarb',T.gCap+T.gExport,T.garbage,'');
+  {const SH={flour:'Liszt',bread:'Kenyér',steel:'Acél',parts:'Alkatr.',cars:'Autó'},items=GKEYS.filter(g=>(S.goods[g]||0)>0||(T.gd&&T.gd.prod&&T.gd.prod[g]>0));
+    const pct=g=>goodsCap(g)?S.goods[g]/goodsCap(g):0;
+    $('uStock').innerHTML=items.length?items.map(g=>`<span class="${pct(g)>=1?'full':''}">${SH[g]} ${fmtN(S.goods[g]||0)}</span>`).join(' · '):'nincs áru';
+    const full=items.filter(g=>pct(g)>=1);$('uStockD').textContent=full.length?`tele: ${full.map(g=>SH[g].toLowerCase()).join(', ')} · raktár kell`:(items.length?`raktár: ${fmtN(T.whN||0)} db`:'')}
   if(T.watStockCap)$('uWatD').textContent+=` · tárolva ${fmtN(S.watStock||0)}`;
   if(T.lfCap)$('uGarbD').textContent+=` · lerakó ${Math.round((S.lfStock||0)/T.lfCap*100)}%`;
   $('pWStore').textContent=T.watStockCap?`${fmtN(S.watStock||0)} / ${fmtN(T.watStockCap)}`:'nincs víztorony';
