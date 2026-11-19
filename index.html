@@ -148,6 +148,11 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 .taxl{font-size:12.5px;font-weight:600}
 .mis-t{margin:0;font-weight:600;line-height:1.35}
 .tool.locked{opacity:.4}
+.mtr{display:flex;flex-wrap:wrap;gap:4px}
+.mtr button{border:1px solid var(--line);background:var(--panel);border-radius:6px;padding:3px 8px;font-size:12px;cursor:pointer}
+.mtr button[data-mt="sell"]{color:var(--ok)}
+.mtr button[data-mt="buy"]{color:var(--com)}
+.rebuild{align-self:flex-start;border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink);border-radius:6px;padding:6px 12px;font-weight:600;cursor:pointer;margin-top:2px}
 .tabs{flex-wrap:wrap}
 .tabs button{flex:1 1 30%;padding:9px 4px;min-width:0;white-space:nowrap}
 .nbcards{display:flex;flex-direction:column;gap:10px}
@@ -278,6 +283,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
         <div class="row"><span>Elégedettség</span><span class="v" id="pSat">–</span></div>
         <div class="row"><span>Munkahelyek (K / I / közszféra)</span><span class="v" id="pJobs">0</span></div>
         <div class="row"><span>Munkanélküliség</span><span class="v" id="pUnemp">0%</span></div>
+        <div class="row"><span>Ingázók a szomszédokba</span><span class="v" id="pCommute">0</span></div>
       </section>
       <section data-tab="city">
         <h2>Közművek</h2>
@@ -287,6 +293,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
         <div class="row"><span>Szemét (elszállítva / keletkező)</span><span class="v" id="pGarb">0 / 0</span></div>
         <div class="row"><span>Víztároló (tárolt / hely)</span><span class="v" id="pWStore">–</span></div>
         <div class="row"><span>Hulladéklerakó (telítettség)</span><span class="v" id="pLf">–</span></div>
+        <div class="row"><span>Forgalom (zsúfolt utak)</span><span class="v" id="pTraffic">–</span></div>
       </section>
       <section data-tab="city">
         <h2>Térképnézet</h2>
@@ -302,6 +309,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
           <button data-ov="cfire" aria-pressed="false">Tűzoltóság</button>
           <button data-ov="chosp" aria-pressed="false">Kórház</button>
           <button data-ov="cedu" aria-pressed="false">Iskola</button>
+          <button data-ov="traffic" aria-pressed="false">Forgalom</button>
         </div>
       </section>
       <section data-tab="money" hidden>
@@ -416,6 +424,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
         <button id="sp2" data-speed="2" aria-pressed="false" title="Közepes">2×</button>
         <button id="sp3" data-speed="3" aria-pressed="false" title="Gyors">3×</button>
         <button id="sp4" data-speed="4" aria-pressed="false" title="Nagyon gyors">4×</button>
+        <button id="sp5" data-speed="5" aria-pressed="false" title="Leggyorsabb">5×</button>
       </div>
     </div>
     <div id="tools" role="toolbar" aria-label="Eszközök"></div>
@@ -429,7 +438,7 @@ const N=50, NN=N*N, HW=32, HH=16;
 const WATER=1, TREE=2;
 const ROAD=1, LINE=2, RZ=3, CZ=4, IZ=5, COAL=6, WIND=7, POLICE=8, FIRE=9, SCHOOL=10, HOSP=11, PARK=12, RUBBLE=13, PUMP=14, TREAT=15;
 const KN={0:'Üres telek',1:'Út',2:'Villanyvezeték',3:'Lakóövezet',4:'Kereskedelmi övezet',5:'Ipari övezet',6:'Szénerőmű',7:'Szélerőmű',8:'Rendőrség',9:'Tűzoltóság',10:'Iskola',11:'Kórház',12:'Park',13:'Romok',14:'Vízmű',15:'Szennyvíztisztító'};
-const UPKEEP={1:1,2:0.3,6:40,7:6,8:35,9:35,10:45,11:55,12:2,14:20,15:30};
+const UPKEEP={1:1,2:0.3,6:60,7:6,8:35,9:35,10:45,11:55,12:2,14:20,15:30};
 const CAP={6:150,7:30};
 const SJOB={6:20,7:3,8:15,9:15,10:20,11:30,14:8,15:10};
 const WCAP_NEAR=120, WCAP_FAR=50, TREATCAP=150, TRADEMAX=200;
@@ -445,7 +454,7 @@ const HITECH_MONTH=240;
 const BUILD={6:6,7:2,8:3,9:3,10:4,11:6,14:3,15:4,16:1,17:5,18:4,19:1,20:6,21:12,22:10};
 const TOWER=23, TOWERCAP=600, LF_SIZE=3000;
 KN[TOWER]='Víztorony';UPKEEP[TOWER]=8;BUILD[TOWER]=2;SJOB[TOWER]=2;
-function problemsAt(i){const k=S.kind[i];if(!k||S.burn[i]||S.build[i])return '';let p='';
+function problemsAt(i){const k=S.kind[i];if(k===RUBBLE)return S.ruin[i]?'x':'';if(!k||S.burn[i]||S.build[i])return '';let p='';
   if(cons(i)>0&&!powered[i])p+='p';
   if(wcons(i)>0&&!watered[i]&&T.wSupply>0)p+='w';
   if(isZone(k)&&!access[i])p+='r';
@@ -466,7 +475,8 @@ const TECHS=[
   {id:'recyc2',name:'Modern hulladékkezelés',cost:3000,desc:'Az újrahasznosító 120 egységet dolgoz fel (eddig 60), a lerakókba 50%-kal több szemét fér.'},
   {id:'taxoffice',name:'Digitális adóhivatal',cost:3000,desc:'Minden adóbevétel 6%-kal nő.'},
   {id:'nuke',name:'Atomenergia',cost:8000,req:'filter',desc:'Építhető lesz az atomerőmű: 400 MW, szennyezés nélkül, de drága, és 18 hónapig épül.'},
-  {id:'autoipar',name:'Autóipar',cost:5000,desc:'Építhető lesz az alkatrészgyár és az autógyár. Az autó lassan készül, de nagyon jól eladható.'}];
+  {id:'autoipar',name:'Autóipar',cost:5000,desc:'Építhető lesz az alkatrészgyár és az autógyár. Az autó lassan készül, de nagyon jól eladható.'},
+  {id:'metro',name:'Metró',cost:4000,desc:'Építhető lesz a metróállomás: 8 mezős körben 65%-kal csökkenti az autóforgalmat.'}];
 const TECH=Object.fromEntries(TECHS.map(t=>[t.id,t]));
 const has=id=>!!(S&&S.research&&S.research.done[id]);
 const isNight=()=>S.month%3===2;
@@ -478,21 +488,24 @@ const gcapOf=k=>k===RECYC&&has('recyc2')?120:GCAP[k];
 const radOf=k=>{const b=RAD[k];if(!b)return 0;if(k===POLICE&&has('patrol'))return b+4;if(k===FIRE&&has('firetruck'))return b+4;if(k===HOSP&&has('ambulance'))return b+4;return b};
 function capOf(i){const k=S.kind[i];if(k===SOLAR){const day=has('solar2')?60:40;return isNight()?(has('battery')?Math.round(day*0.4):0):day}return CAP[k]||0}
 const builtAny=k=>{for(let i=0;i<NN;i++)if(S.kind[i]===k&&!S.build[i])return true;return false};
-const RAD={8:9,9:9,10:8,11:10,12:3,19:5,20:12,22:15};
-const COVOV={cpol:[POLICE,'59,91,168'],cfire:[FIRE,'200,60,48'],chosp:[HOSP,'214,60,110'],cedu:[SCHOOL,'200,140,30']};
-const TOOLOV={pipe:'water',pump:'water',treat:'water',tower:'water',police:'cpol',fire:'cfire',hosp:'chosp',school:'cedu'};
-const BASEP={pow:{b:4,s:2.5,unit:'MW'},wat:{b:3,s:2,unit:'egység'},garb:{b:2.5,s:1.2,unit:'egység'}};
+const RAD={8:9,9:9,10:8,11:10,12:3,19:5,20:12,22:15,32:5,33:8};
+const COVOVX={bus:1};const COVOV={cpol:[POLICE,'59,91,168'],cfire:[FIRE,'200,60,48'],chosp:[HOSP,'214,60,110'],cedu:[SCHOOL,'200,140,30']};
+const TOOLOV={bus:'traffic',metro:'traffic',pipe:'water',pump:'water',treat:'water',tower:'water',police:'cpol',fire:'cfire',hosp:'chosp',school:'cedu'};
+const BASEP={pow:{b:3.8,s:1.1,unit:'MW'},wat:{b:3,s:2,unit:'egység'},garb:{b:2.5,s:1.2,unit:'egység'}};
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const clampN=(v,a,b)=>{v=Number(v);return isFinite(v)?Math.max(a,Math.min(b,v)):a};
-const GOODS={flour:{n:'Liszt',b:2.5,s:1.6,cap:2000,rd:60,rs:80},bread:{n:'Kenyér',b:4,s:3,cap:3000,rd:90,rs:60},steel:{n:'Acél',b:10,s:7,cap:1500,rd:40,rs:50},parts:{n:'Alkatrész',b:18,s:13,cap:1500,rd:40,rs:40},cars:{n:'Autó',b:330,s:240,cap:100,rd:4,rs:2}};
+const GOODS={flour:{n:'Liszt',b:2,s:1,cap0:200,capW:1500,rd:60,rs:80},bread:{n:'Kenyér',b:3,s:1.5,cap0:300,capW:2000,rd:60,rs:60},steel:{n:'Acél',b:10,s:6,cap0:150,capW:1200,rd:40,rs:50},parts:{n:'Alkatrész',b:18,s:13,cap0:150,capW:1200,rd:40,rs:40},cars:{n:'Autó',b:330,s:240,cap0:8,capW:60,rd:4,rs:2}};
+const goodsCap=g=>GOODS[g].cap0+(T.whN||0)*GOODS[g].capW;
 const GKEYS=Object.keys(GOODS);
 for(const g of GKEYS)BASEP[g]={b:GOODS[g].b,s:GOODS[g].s,unit:'db'};
 const MILL=26,BAKERY=27,STEELW=28,PARTSF=29,CARF=30;
 Object.assign(KN,{26:'Malom',27:'Pékség',28:'Acélmű',29:'Alkatrészgyár',30:'Autógyár'});
-Object.assign(UPKEEP,{26:12,27:15,28:45,29:40,30:90});Object.assign(BUILD,{26:3,27:2,28:6,29:5,30:10});Object.assign(SJOB,{26:10,27:15,28:40,29:35,30:80});
+Object.assign(UPKEEP,{26:25,27:40,28:60,29:60,30:150});Object.assign(BUILD,{26:3,27:2,28:6,29:5,30:10});Object.assign(SJOB,{26:10,27:15,28:40,29:35,30:80});
 const RECIPE={26:{out:{flour:40}},27:{in:{flour:20},out:{bread:60}},28:{out:{steel:24}},29:{in:{steel:12},out:{parts:24}},30:{in:{steel:6,parts:12},out:{cars:2}}};
 const FPOW={26:4,27:4,28:10,29:8,30:12},FWAT={26:2,27:3,28:5,29:3,30:5},FPOL={26:1,27:1,28:22,29:6,30:8};
 const isFactory=k=>k>=26&&k<=30;
+const WAREHOUSE=31,BUS=32,METRO=33;
+Object.assign(KN,{31:'Raktár',32:'Buszmegálló',33:'Metróállomás'});Object.assign(UPKEEP,{31:20,32:12,33:70});Object.assign(BUILD,{31:3,32:1,33:8});Object.assign(SJOB,{31:8,32:3,33:20});
 const EVENTS={
   pow:[[0.7,'Hőség van a szomszéd városban, mindenki klímát kapcsol: megugrott az áram ára és a kereslet.',1.8],[-0.5,'A szomszéd új erőművet adott át, olcsó lett az áram, és alig vesznek tőlünk.',0.4]],
   wat:[[0.6,'Aszály sújtja a szomszédot: drága a víz, és sokat vennének.',1.8],[-0.4,'Sok eső esett, a szomszédnak alig kell víz.',0.3]],
@@ -501,7 +514,7 @@ const RPOP=[0,12,45,140], CJOB=[0,6,22,70], IJOB=[0,10,28,60];
 const MONTHS=['jan.','febr.','márc.','ápr.','máj.','jún.','júl.','aug.','szept.','okt.','nov.','dec.'];
 const TITLES=[[0,'Tanya'],[150,'Falu'],[600,'Község'],[2500,'Kisváros'],[10000,'Város'],[40000,'Nagyváros'],[100000,'Metropolisz']];
 const ZCOL={3:'#46a34f',4:'#3a7fd0',5:'#d6971f'};
-const SPEEDMS=[0,2200,1100,420,150];
+const SPEEDMS=[0,5000,2500,1100,450,150];
 const SAVEKEY='varosalapito-web-v1';
 
 const TOOLS=[
@@ -513,7 +526,7 @@ const TOOLS=[
   {id:'res',g:'Övezetek',name:'Lakó',cost:20,kind:RZ,mode:'rect',sw:'#46a34f',hint:'Lakóövezet. Út 3 mezőn belül és áram kell, hogy beköltözzenek.'},
   {id:'com',g:'Övezetek',name:'Kereskedelmi',cost:25,kind:CZ,mode:'rect',sw:'#3a7fd0',hint:'Boltok és irodák. A lakosság számával nő az igény.'},
   {id:'ind',g:'Övezetek',name:'Ipari',cost:25,kind:IZ,mode:'rect',sw:'#d6971f',hint:'Gyárak: sok munkahely, de szennyez. Tedd távolabb a lakóktól.'},
-  {id:'coal',g:'Energia',name:'Szénerőmű',cost:3000,kind:COAL,mode:'single',sw:'#6b6b6b',hint:'150 MW, erősen szennyez. Fenntartás 40 Ft/hó.'},
+  {id:'coal',g:'Energia',name:'Szénerőmű',cost:3000,kind:COAL,mode:'single',sw:'#6b6b6b',hint:'150 MW, erősen szennyez. Fenntartás 60 Ft/hó.'},
   {id:'wind',g:'Energia',name:'Szélerőmű',cost:600,kind:WIND,mode:'single',sw:'#e6ecee',hint:'30 MW tiszta energia. Fenntartás 6 Ft/hó.'},
   {id:'solar',g:'Energia',name:'Napelempark',cost:900,kind:SOLAR,mode:'single',sw:'#2f5d8f',hint:'Nappal 40 MW tiszta energia, éjszaka (minden 3. hónapban) semmi. Fenntartás 3 Ft/hó.'},
   {id:'nuke',g:'Energia',name:'Atomerőmű',cost:20000,kind:NUKE,mode:'single',sw:'#b7c2c9',tech:'nuke',unique:false,hint:'Kutatás után építhető. 400 MW, szennyezés nélkül. Fenntartás 150 Ft/hó.'},
@@ -523,16 +536,19 @@ const TOOLS=[
   {id:'landfill',g:'Hulladék',name:'Hulladéklerakó',cost:400,kind:LANDFILL,mode:'single',sw:'#8a7a5a',hint:'Havonta 80 egység szemetet fogad, összesen 3000 egységnyi hely van benne. Ha megtelik, nem fogad többet, és a szomszéd szemetét is csak szabad hely esetén veheted át. A szemétégető és az újrahasznosító szabad kapacitása lassan apasztja. Út kell hozzá. Fenntartás 10 Ft/hó.'},
   {id:'incin',g:'Hulladék',name:'Szemétégető',cost:2500,kind:INCIN,mode:'single',sw:'#7d5a4a',hint:'Havi 150 egység szemetet éget el, és közben 40 MW áramot termel, de erősen szennyez. Út kell hozzá. Fenntartás 35 Ft/hó.'},
   {id:'recyc',g:'Hulladék',name:'Újrahasznosító',cost:1800,kind:RECYC,mode:'single',sw:'#4f9a8a',hint:'Havi 60 egység szemetet dolgoz fel szinte szennyezés nélkül. Út és áram kell hozzá. Fenntartás 40 Ft/hó.'},
-  {id:'mill',g:'Gyártás',name:'Malom',cost:1200,kind:MILL,mode:'single',sw:'#c9a46a',hint:'Havonta 40 liszt. Áram és út kell hozzá. 10 munkahely, fenntartás 12 Ft/hó.'},
-  {id:'bakery',g:'Gyártás',name:'Pékség',cost:1500,kind:BAKERY,mode:'single',sw:'#e0a050',hint:'20 lisztből havonta 60 kenyér. A lakók megveszik, a maradékot eladhatod. 15 munkahely, fenntartás 15 Ft/hó.'},
-  {id:'steel',g:'Gyártás',name:'Acélmű',cost:6000,kind:STEELW,mode:'single',sw:'#5d6670',hint:'Havonta 24 acél. Erősen szennyez. 40 munkahely, fenntartás 45 Ft/hó.'},
-  {id:'parts',g:'Gyártás',name:'Alkatrészgyár',cost:5000,kind:PARTSF,mode:'single',sw:'#6f8fb0',tech:'autoipar',hint:'Kutatás után építhető. 12 acélból havonta 24 alkatrész. 35 munkahely, fenntartás 40 Ft/hó.'},
-  {id:'carf',g:'Gyártás',name:'Autógyár',cost:15000,kind:CARF,mode:'single',sw:'#c04848',tech:'autoipar',hint:'Kutatás után építhető. 6 acél + 12 alkatrész → havonta 2 autó, darabja kb. 240 Ft. 80 munkahely, fenntartás 90 Ft/hó.'},
+  {id:'mill',g:'Gyártás',name:'Malom',cost:1200,kind:MILL,mode:'single',sw:'#c9a46a',hint:'Havonta 40 liszt. Áram és út kell hozzá. 10 munkahely, fenntartás 25 Ft/hó.'},
+  {id:'bakery',g:'Gyártás',name:'Pékség',cost:1500,kind:BAKERY,mode:'single',sw:'#e0a050',hint:'20 lisztből havonta 60 kenyér. A lakók megveszik, a maradékot eladhatod. 15 munkahely, fenntartás 40 Ft/hó.'},
+  {id:'steel',g:'Gyártás',name:'Acélmű',cost:6000,kind:STEELW,mode:'single',sw:'#5d6670',hint:'Havonta 24 acél. Erősen szennyez. 40 munkahely, fenntartás 60 Ft/hó.'},
+  {id:'parts',g:'Gyártás',name:'Alkatrészgyár',cost:5000,kind:PARTSF,mode:'single',sw:'#6f8fb0',tech:'autoipar',hint:'Kutatás után építhető. 12 acélból havonta 24 alkatrész. 35 munkahely, fenntartás 60 Ft/hó.'},
+  {id:'carf',g:'Gyártás',name:'Autógyár',cost:15000,kind:CARF,mode:'single',sw:'#c04848',tech:'autoipar',hint:'Kutatás után építhető. 6 acél + 12 alkatrész → havonta 2 autó, darabja kb. 240 Ft. 80 munkahely, fenntartás 150 Ft/hó.'},
+  {id:'warehouse',g:'Gyártás',name:'Raktár',cost:2000,kind:WAREHOUSE,mode:'single',sw:'#a08a6a',hint:'Több árut tárolhatsz: +1500 liszt, +2000 kenyér, +1200 acél és alkatrész, +60 autó. Út kell hozzá. Fenntartás 20 Ft/hó.'},
   {id:'police',g:'Szolgáltatás',name:'Rendőrség',cost:500,kind:POLICE,mode:'single',sw:'#3b5ba8',hint:'Csökkenti a bűnözést 9 mezős körben. Fenntartás 35 Ft/hó.'},
   {id:'fire',g:'Szolgáltatás',name:'Tűzoltóság',cost:500,kind:FIRE,mode:'single',sw:'#c23b30',hint:'Megfékezi a tüzeket 9 mezős körben. Fenntartás 35 Ft/hó.'},
   {id:'hosp',g:'Szolgáltatás',name:'Kórház',cost:1000,kind:HOSP,mode:'single',sw:'#f2f2f2',hint:'Növeli a telekértéket a környéken. Fenntartás 55 Ft/hó.'},
   {id:'school',g:'Szolgáltatás',name:'Iskola',cost:800,kind:SCHOOL,mode:'single',sw:'#d39b2a',hint:'Növeli a telekértéket a környéken. Fenntartás 45 Ft/hó.'},
   {id:'park',g:'Szolgáltatás',name:'Park',cost:100,kind:PARK,mode:'rect',sw:'#5f9e4b',hint:'Szebb környék, kevesebb szennyezés. 100 Ft/mező.'},
+  {id:'bus',g:'Közlekedés',name:'Buszmegálló',cost:400,kind:BUS,mode:'single',sw:'#e0b020',hint:'5 mezős körben akár 45%-kal kevesebb autó az utakon (a megálló közelében a legtöbb). Fenntartás 12 Ft/hó.'},
+  {id:'metro',g:'Közlekedés',name:'Metróállomás',cost:3000,kind:METRO,mode:'single',sw:'#2f5fb0',tech:'metro',hint:'Kutatás után. 8 mezős körben akár 70%-kal kevesebb autó. Áram kell hozzá. Fenntartás 70 Ft/hó.'},
   {id:'statue',g:'Különleges',name:'Emlékmű',cost:300,kind:STATUE,mode:'single',sw:'#b8a27a',rank:1,unique:true,hint:'Falu rangtól, egy lehet belőle. Növeli az elégedettséget a közelben.'},
   {id:'hall',g:'Különleges',name:'Városháza',cost:4000,kind:HALL,mode:'single',sw:'#c9b48a',rank:2,unique:true,hint:'Község rangtól, egy lehet belőle. Elégedettség és telekérték 12 mezős körben. 25 munkahely.'},
   {id:'stadium',g:'Különleges',name:'Stadion',cost:12000,kind:STADIUM,mode:'single',sw:'#6aa86a',rank:3,unique:true,hint:'Kisváros rangtól, egy lehet belőle. Az egész városban nő az elégedettség. 40 munkahely.'},
@@ -576,7 +592,7 @@ function newGame(seed){
     if(Math.abs(x-rx)<w||dl<lr) terrain[i]=WATER;
     else if(n2(x,y)*0.7+n1(x+31,y+17)*0.5>0.78) terrain[i]=TREE;
   }
-  S={v:1,seed,name:'Újfalu',money:20000,month:0,tax:9,speed:1,terrain,kind,dens,burn,build:new Uint8Array(NN),pipe:new Uint8Array(NN),trade:{pow:'auto',wat:'auto',garb:'auto'},lastInc:0,lastExp:0,lastTrade:0,rank:0,cam:null};
+  S={v:1,seed,name:'Újfalu',money:20000,month:0,tax:9,speed:1,terrain,kind,dens,burn,build:new Uint8Array(NN),ruin:new Uint8Array(NN),ruinD:new Uint8Array(NN),pipe:new Uint8Array(NN),trade:{pow:'auto',wat:'auto',garb:'auto'},lastInc:0,lastExp:0,lastTrade:0,rank:0,cam:null};
   // autópálya keresztül a térképen
   const hy=Math.floor(N*0.56);
   for(let x=0;x<N;x++){const i=hy*N+x;kind[i]=ROAD;if(terrain[i]===TREE)terrain[i]=0;}
@@ -596,7 +612,7 @@ function newGame(seed){
   pushMsg('Üdv, polgármester! Jelölj ki övezeteket az utak mellett. Az első küldetésedet a Városháza Város fülén találod.','good');
 }
 
-function fixDefaults(){S.research=S.research&&typeof S.research==='object'?S.research:{budget:0,done:{},cur:null,pts:0};S.research.done=S.research.done||{};S.research.pts=+S.research.pts||0;S.research.budget=+S.research.budget||0;S.watStock=+S.watStock||0;S.lfStock=+S.lfStock||0;if(!isFinite(S.money))S.money=0;if(!isFinite(S.month))S.month=0;if(!isFinite(S.rank))S.rank=0;if(!SPEEDMS.hasOwnProperty(S.speed))S.speed=1;S.taxR??=S.tax??9;S.taxC??=S.tax??9;S.taxI??=S.tax??9;S.loans??=[];S.mission??=0;S.disasters??=true;S.gExport??=false;S.trade.garb??=(S.gExport?'auto':'off');S.lastLoan??=0;S.hiTechMsg??=0;fixNb()}
+function fixDefaults(){for(const a of ['ruin','ruinD'])S[a]=S[a]&&S[a].length===NN?Uint8Array.from(S[a]):new Uint8Array(NN);S.manMonth=S.manMonth&&typeof S.manMonth==='object'?S.manMonth:{inc:0,exp:0};S.research=S.research&&typeof S.research==='object'?S.research:{budget:0,done:{},cur:null,pts:0};S.research.done=S.research.done||{};S.research.pts=+S.research.pts||0;S.research.budget=+S.research.budget||0;S.watStock=+S.watStock||0;S.lfStock=+S.lfStock||0;if(!isFinite(S.money))S.money=0;if(!isFinite(S.month))S.month=0;if(!isFinite(S.rank))S.rank=0;if(!SPEEDMS.hasOwnProperty(S.speed))S.speed=1;S.taxR??=S.tax??9;S.taxC??=S.tax??9;S.taxI??=S.tax??9;S.loans??=[];S.mission??=0;S.disasters??=true;S.gExport??=false;S.trade.garb??=(S.gExport?'auto':'off');S.lastLoan??=0;S.hiTechMsg??=0;fixNb()}
 function afterLoad(){
   fixDefaults();
   grassCol=new Array(NN);
@@ -618,7 +634,7 @@ const isBuilding=i=>{const k=S.kind[i];return (isZone(k)&&S.dens[i]>0)||(isFacil
 const conductor=k=>k!==0&&k!==RUBBLE;
 const onEdge=i=>{const x=i%N,y=(i/N)|0;return x===0||y===0||x===N-1||y===N-1};
 const hiTech=i=>S.kind[i]===IZ&&S.month>=HITECH_MONTH&&covEdu[i]>0.2;
-function cons(i){const k=S.kind[i];if(S.build[i])return 0;if(isFactory(k))return FPOW[k];if(isZone(k))return S.dens[i]>0?S.dens[i]+1:0;if(k>=POLICE&&k<=HOSP)return 5;if(k===PUMP||k===TREAT||k===RECYC)return 4;if(k===HALL)return 5;if(k===STADIUM||k===AMUSE)return 8;return 0}
+function cons(i){const k=S.kind[i];if(S.build[i])return 0;if(k===METRO)return 10;if(k===WAREHOUSE)return 3;if(isFactory(k))return FPOW[k];if(isZone(k))return S.dens[i]>0?S.dens[i]+1:0;if(k>=POLICE&&k<=HOSP)return 5;if(k===PUMP||k===TREAT||k===RECYC)return 4;if(k===HALL)return 5;if(k===STADIUM||k===AMUSE)return 8;return 0}
 function wcons(i){const k=S.kind[i];if(S.build[i])return 0;if(isFactory(k))return FWAT[k];if(isZone(k))return S.dens[i]>0?S.dens[i]+1:0;if(k===COAL)return 4;if(k>=POLICE&&k<=HOSP||k===HALL)return 3;if(k===STADIUM||k===AMUSE)return 4;return 0}
 function nb(i,f){const x=i%N,y=(i/N)|0;if(x>0)f(i-1);if(x<N-1)f(i+1);if(y>0)f(i-N);if(y<N-1)f(i+N)}
 
@@ -684,16 +700,31 @@ function cover(arr,k,R,needPow){arr.fill(0);
   for(let i=0;i<NN;i++){if(S.kind[i]!==k||(needPow&&!powered[i])||S.burn[i]||S.build[i])continue;const x0=i%N,y0=(i/N)|0;
     for(let dy=-R;dy<=R;dy++)for(let dx=-R;dx<=R;dx++){const x=x0+dx,y=y0+dy;if(x<0||y<0||x>=N||y>=N)continue;
       const dd=Math.hypot(dx,dy);if(dd>R)continue;const v=1-dd/(R+1),j=y*N+x;if(v>arr[j])arr[j]=v;}}}
+const traffic=new Float32Array(NN),cong=new Float32Array(NN),congNear=new Float32Array(NN),covBus=new Float32Array(NN),covMetro=new Float32Array(NN);
+const ROADCAP=60;
+function computeTraffic(){traffic.fill(0);cong.fill(0);
+  const near=new Int32Array(NN).fill(-1),dd=new Uint8Array(NN).fill(255),q=[];
+  for(let i=0;i<NN;i++)if(S.kind[i]===ROAD){near[i]=i;dd[i]=0;q.push(i)}
+  for(let h=0;h<q.length;h++){const i=q[h];if(dd[i]>=3)continue;nb(i,j=>{if(dd[j]===255){dd[j]=dd[i]+1;near[j]=near[i];q.push(j)}})}
+  for(let i=0;i<NN;i++){const k=S.kind[i],d=S.dens[i];let tr=0;
+    if(k===RZ)tr=RPOP[d]*0.5;else if(k===CZ)tr=CJOB[d]*0.45;else if(k===IZ)tr=IJOB[d]*0.45;else if(SJOB[k]&&!S.build[i])tr=SJOB[k]*0.3;
+    if(!tr||near[i]<0)continue;traffic[near[i]]+=tr*(1-Math.max(Math.min(0.45,covBus[i]*0.8),Math.min(0.7,covMetro[i]*1.1)))}
+  let cur=traffic.slice();
+  for(let it=0;it<4;it++){const nx=new Float32Array(NN);for(let i=0;i<NN;i++){if(S.kind[i]!==ROAD)continue;let s=cur[i],n=1;nb(i,j=>{if(S.kind[j]===ROAD){s+=cur[j];n++}});nx[i]=s/n}cur=nx}
+  let sum=0,cnt=0,cr=0;
+  for(let i=0;i<NN;i++){if(S.kind[i]!==ROAD){traffic[i]=0;continue}traffic[i]=cur[i];cong[i]=Math.max(0,Math.min(2,traffic[i]/ROADCAP-1));if(traffic[i]>5){sum+=cong[i];cnt++}if(cong[i]>0.3)cr++}
+  T.congAvg=cnt?sum/cnt:0;T.congRoads=cr;
+  const src=new Float32Array(NN);for(let i=0;i<NN;i++)src[i]=cong[i]*10;spread(congNear,src,2)}
 function spread(out,src,R){out.fill(0);
   for(let i=0;i<NN;i++){const v=src[i];if(v<=0)continue;const x0=i%N,y0=(i/N)|0;
     for(let dy=-R;dy<=R;dy++)for(let dx=-R;dx<=R;dx++){const x=x0+dx,y=y0+dy;if(x<0||y<0||x>=N||y>=N)continue;
       const dd=Math.hypot(dx,dy);if(dd>R)continue;out[y*N+x]+=v*(1-dd/(R+1));}}}
 function recompute(){
   computePower();computeWater();computeAccess();
-  cover(covPol,POLICE,radOf(POLICE),true);cover(covFire,FIRE,radOf(FIRE),true);cover(covEdu,SCHOOL,radOf(SCHOOL),true);cover(covHosp,HOSP,radOf(HOSP),true);cover(covPark,PARK,3,false);cover(covHall,HALL,12,false);cover(covAmuse,AMUSE,15,false);cover(covStatue,STATUE,5,false);
+  cover(covPol,POLICE,radOf(POLICE),true);cover(covFire,FIRE,radOf(FIRE),true);cover(covEdu,SCHOOL,radOf(SCHOOL),true);cover(covHosp,HOSP,radOf(HOSP),true);cover(covPark,PARK,3,false);cover(covHall,HALL,12,false);cover(covAmuse,AMUSE,15,false);cover(covStatue,STATUE,5,false);cover(covBus,BUS,radOf(BUS),false);cover(covMetro,METRO,radOf(METRO),true);computeTraffic();
   const sp=new Float32Array(NN), sc=new Float32Array(NN);
   for(let i=0;i<NN;i++){const k=S.kind[i],d=S.dens[i];
-    if(k===IZ)sp[i]=d?(hiTech(i)?1+d:2+d*4):0;else if(k===COAL)sp[i]=has('filter')?14:30;else if(k===INCIN)sp[i]=24;else if(k===LANDFILL)sp[i]=9;else if(k===RECYC)sp[i]=1.5;else if(isFactory(k))sp[i]=FPOL[k];else if(k===CZ)sp[i]=d*1.5;else if(k===ROAD)sp[i]=T.pop>2000?0.9:0.4;
+    if(k===IZ)sp[i]=d?(hiTech(i)?1+d:2+d*4):0;else if(k===COAL)sp[i]=has('filter')?14:30;else if(k===INCIN)sp[i]=24;else if(k===LANDFILL)sp[i]=9;else if(k===RECYC)sp[i]=1.5;else if(isFactory(k))sp[i]=FPOL[k];else if(k===CZ)sp[i]=d*1.5;else if(k===ROAD)sp[i]=0.3+Math.min(3,traffic[i]*0.03);
     if(S.build[i])sp[i]=0;
     if(k===RZ)sc[i]=d*4;else if(k===CZ)sc[i]=d*5;else if(k===IZ)sc[i]=d*3;}
   spread(pol,sp,5);spread(crm,sc,3);
@@ -701,12 +732,12 @@ function recompute(){
     pol[i]=Math.max(0,Math.min(100,pol[i]+sewPol[i]+(isBuilding(i)?T.gRatio*12:0)-(S.terrain[i]===TREE?4:0)-covPark[i]*14));
     crm[i]=Math.max(0,Math.min(100,crm[i]*0.9-covPol[i]*75));
     let tn=0;nb(i,j=>{if(S.terrain[j]===TREE||S.kind[j]===PARK)tn=1});
-    land[i]=Math.max(0,Math.min(100,38+waterNear[i]*16+covPark[i]*22+covEdu[i]*14+covHosp[i]*14+tn*5+covHall[i]*10+covAmuse[i]*12+covStatue[i]*4-pol[i]*0.55-crm[i]*0.45));
+    land[i]=Math.max(0,Math.min(100,38+waterNear[i]*16+covPark[i]*22+covEdu[i]*14+covHosp[i]*14+tn*5+covHall[i]*10+covAmuse[i]*12+covStatue[i]*4-pol[i]*0.55-crm[i]*0.45-Math.min(25,congNear[i])));
   }
   const stad=builtAny(STADIUM)?6:0;let ss=0,sw=0;
   for(let i=0;i<NN;i++){if(S.kind[i]!==RZ){sat[i]=0;continue}
     let v=58+land[i]*0.25-pol[i]*0.25-crm[i]*0.3+covPol[i]*6+covFire[i]*6+covEdu[i]*8+covHosp[i]*8+covPark[i]*6+covHall[i]*10+covAmuse[i]*14+covStatue[i]*6+stad
-      -T.unemp*45-(S.taxR-8)*3-T.gRatio*25;
+      -Math.min(18,congNear[i]*0.8)-T.unemp*45-(S.taxR-8)*3-T.gRatio*25;
     if(S.dens[i]&&!powered[i])v-=15;
     sat[i]=Math.max(0,Math.min(100,v));const w=RPOP[S.dens[i]]||1;ss+=sat[i]*w;sw+=w}
   T.sat=sw?ss/sw:60;
@@ -717,9 +748,13 @@ function totals(){let p=0,c=0,ind=0,sv=0,na=0;
     if(isZone(k)&&!access[i])na++;}
   T.pop=p;T.jobsC=c;T.jobsI=ind;T.jobsS=sv;T.noAccess=na;
   const jobs=c+ind+sv, work=p*0.55, tk=v=>(v-8)*0.055;
-  T.unemp=work>0?Math.max(0,(work-jobs)/work):0;
+  let wh=0;for(let i=0;i<NN;i++)if(S.kind[i]===WAREHOUSE&&!S.build[i]&&!S.burn[i]&&access[i])wh++;T.whN=wh;
+  {const unempW=Math.max(0,work-jobs);let com=0;T.commuteBy={};
+    for(const d of dirsWithRoad()){const free=nbJobs(d),q=Math.max(0,Math.min(Math.floor(unempW-com),free));T.commuteBy[d]=q;com+=q}
+    T.commute=com}
+  T.unemp=work>0?Math.max(0,(work-jobs-T.commute)/work):0;
   const cl=v=>Math.max(-1,Math.min(1,v));
-  T.demR=cl((jobs+50-work)/(work+50)-tk(S.taxR)+(T.sat-55)/120);
+  T.demR=cl((jobs+T.commute+50-work)/(work+50)-tk(S.taxR)+(T.sat-55)/120);
   const ct=p*0.22+12, it=p*0.3+30;
   T.demC=cl((ct-c)/ct-tk(S.taxC));
   T.demI=cl((it-ind)/it-tk(S.taxI));
@@ -753,7 +788,7 @@ function simMonth(){
       if(covFire[i]>0.2&&R()<0.55+covFire[i]*0.4){S.burn[i]=0;put++;if(isZone(k)&&S.dens[i]>1)S.dens[i]--;continue}
       S.burn[i]++;
       nb(i,j=>{if(!S.burn[j]&&isBuilding(j)&&R()<0.22*(1-covFire[j]))S.burn[j]=1});
-      if(S.burn[i]>=4){S.burn[i]=0;destroyed++;if(isZone(k))S.dens[i]=0;else{S.kind[i]=RUBBLE;S.dens[i]=0}dirty=true}
+      if(S.burn[i]>=4){S.burn[i]=0;destroyed++;S.ruin[i]=k;S.ruinD[i]=S.dens[i];if(isZone(k))S.dens[i]=0;else{S.kind[i]=RUBBLE;S.dens[i]=0}dirty=true}
       continue;
     }
     if(S.disasters&&S.month>=24&&isBuilding(i)&&R()<0.0011*(1-covFire[i]*0.9)){S.burn[i]=1;fires++;continue}
@@ -770,6 +805,7 @@ function simMonth(){
     else if(dem<-0.25&&d>0&&R()<0.05*-dem)S.dens[i]--;
   }
   recompute();totals();
+  for(let i=0;i<NN;i++)if(S.ruin[i]&&isZone(S.kind[i])&&S.dens[i]>0)S.ruin[i]=0;
   produceMonth();const tt=tradeTotals();const sales=tt.inc+(T.domInc||0), buys=tt.exp;
   const inc=Math.round((has('taxoffice')?1.06:1)*(S.taxR*(T.pop*0.06+T.jobsS*0.02)+S.taxC*T.jobsC*0.05+S.taxI*T.jobsI*0.05)+sales);
   let loanPay=0;S.loans=S.loans.filter(l=>{loanPay+=l.pay||LOAN.pay;l.left--;return l.left>0});
@@ -778,7 +814,7 @@ function simMonth(){
   S.money+=inc-exp;S.lastInc=inc;S.lastExp=exp;
   while(S.money<0&&S.loans.length<LOAN.max){S.loans.push({left:LOAN.months,pay:LOAN.autoPay,auto:1});S.money+=LOAN.amount;
     pushMsg(`Kiürült a kassza, ezért a bank kényszerhitelt adott: +${fmtN(LOAN.amount)} Ft, de drágábban: ${LOAN.autoPay} Ft/hó, ${LOAN.months} hónapig. Még ${LOAN.max-S.loans.length} hitel fér bele.`,'warn')}
-  if(S.money<0&&!S.over){S.over={month:S.month,pop:T.pop,money:S.money};}S.lastTrade=Math.round(tt.inc-tt.exp);S.lastDom=T.domInc||0;S.lastGoods=goodsLedger();S.lastLoan=loanPay;
+  if(S.money<0&&!S.over){S.over={month:S.month,pop:T.pop,money:S.money};}S.lastMan=S.manMonth;S.manMonth={inc:0,exp:0};S.lastTrade=Math.round(tt.inc-tt.exp);S.lastDom=T.domInc||0;S.lastGoods=goodsLedger();S.lastLoan=loanPay;
   researchMonth(resSpend);
   S.watStock=Math.round(T.watStockAfter||0);S.lfStock=Math.round(T.lfAfter||0);dirty=true;
   if(T.lfCap&&S.lfStock>=T.lfCap*0.9&&!S.lfWarn){S.lfWarn=1;pushMsg(S.lfStock>=T.lfCap?'Megtelt a hulladéklerakó! Nem fogad több szemetet. Építs újat, vagy szemétégetőt, ami apasztja.':'A hulladéklerakó 90%-ig megtelt.','warn')}
@@ -835,7 +871,8 @@ function advisorSays(){
   const nextSpecial=TOOLS.find(t=>t.rank&&S.rank>=t.rank&&!S.kind.includes(t.kind));
   const m=Math.max(T.demR,T.demC,T.demI);
   o.dev=T.sat<40&&T.pop>100?[2,`Elégedetlenek a lakók (${Math.round(T.sat)}%). Az adó, a munkanélküliség, a szennyezés és a hiányzó szolgáltatások rontják a hangulatot.`]
-    :T.unemp>0.2&&T.pop>200?[1,`A munkaképes lakók ${pct(T.unemp)}-a munkanélküli. Jelölj ki ipari vagy kereskedelmi övezetet.`]
+    :T.unemp>0.2&&T.pop>200?[1,`A munkaképes lakók ${pct(T.unemp)}-a munkanélküli. Jelölj ki ipari vagy kereskedelmi övezetet, vagy építs utat a szomszédokhoz, hogy átjárhassanak dolgozni.`]
+    :T.congAvg>0.5?[1,`Dugók vannak: ${T.congRoads} útszakasz zsúfolt. Építs buszmegállót a sűrű negyedekbe, vagy kutasd ki a metrót.`]
     :T.noAccess>4?[1,`${T.noAccess} övezeti mező nem éri el az utat (legfeljebb 3 mező kell).`]
     :S.research&&!S.research.cur&&S.research.budget>0?[1,'Fizetünk a kutatásért, de nincs kiválasztott téma. Válassz egyet a Kutatás fülön.']
     :nextSpecial?[0,`Most már építhetsz: ${nextSpecial.name.toLowerCase()}. Megtalálod az eszköztár végén.`]
@@ -878,10 +915,10 @@ const DIRNAME={n:'Északi',e:'Keleti',s:'Déli',w:'Nyugati'};
 const ROBOTNAME={n:'Hegyesd',e:'Tóvár',s:'Kisberek',w:'Szélfalva'};
 const RKEYS=['pow','wat','garb',...GKEYS];
 const RNAME={pow:'Áram',wat:'Víz',garb:'Szemét',flour:'Liszt',bread:'Kenyér',steel:'Acél',parts:'Alkatrész',cars:'Autó'};
-const RSCALE={pow:[70,90],wat:[70,90],garb:[30,80]};for(const g of GKEYS)RSCALE[g]=[GOODS[g].rd,GOODS[g].rs];
+const RSCALE={pow:[50,90],wat:[70,90],garb:[30,80]};for(const g of GKEYS)RSCALE[g]=[GOODS[g].rd,GOODS[g].rs];
 function newMk(){return{m:1,dem:0,sup:0,hist:[1],ev:1,evLeft:0,f:+(0.5+Math.random()*0.9).toFixed(2)}}
 function fixNb(){S.nb=S.nb&&typeof S.nb==='object'?S.nb:{};
-  for(const d of DIRS){const n=S.nb[d]=S.nb[d]||{};if(n.allowBuy===undefined)n.allowBuy=true;if(n.allowSell===undefined)n.allowSell=true;n.mk=n.mk||{};for(const r of RKEYS)if(!n.mk[r])n.mk[r]=newMk()}
+  for(const d of DIRS){const n=S.nb[d]=S.nb[d]||{};if(!n.jf)n.jf=+(0.4+Math.random()).toFixed(2);if(n.jobs===undefined)n.jobs=Math.round(45*n.jf);if(n.allowBuy===undefined)n.allowBuy=true;if(n.allowSell===undefined)n.allowSell=true;n.mk=n.mk||{};for(const r of RKEYS){if(!n.mk[r])n.mk[r]=newMk();const k=n.mk[r];if(!k.dem&&!k.sup&&RSCALE[r]){k.dem=Math.round(RSCALE[r][0]*(k.f||1)*0.8);k.sup=Math.round(RSCALE[r][1]*(k.f||1)*0.8)}}}
   S.nbSlots=S.nbSlots&&typeof S.nbSlots==='object'?S.nbSlots:{};
   S.goods=S.goods&&typeof S.goods==='object'?S.goods:{};for(const g of GKEYS){S.goods[g]=Math.max(0,+S.goods[g]||0);if(!S.trade[g])S.trade[g]='auto'}
   S.mpLinks=Array.isArray(S.mpLinks)?S.mpLinks:[];S.mpBlock=Array.isArray(S.mpBlock)?S.mpBlock:[]}
@@ -894,7 +931,7 @@ function nbSetPlayer(pid,info){if(!pid)return null;let d=S.nbSlots[pid];
   if(!d||(isPlayer(d)&&NBP[d].pid!==pid)){const sc=x=>((T.connPow||{})[x]?2:0)+((T.connWat||{})[x]?1:0)+((T.roadDirs||[]).includes(x)?1:0);
     d=['e','s','n','w'].filter(x=>!isPlayer(x)||NBP[x].pid===pid).sort((a,b)=>sc(b)-sc(a))[0];if(!d)return null;S.nbSlots[pid]=d}
   const was=NBP[d]&&NBP[d].pid===pid&&isPlayer(d);
-  NBP[d]={pid,ttl:info.ttl||60000,name:String(info.name||'névtelen').slice(0,24),pop:clampN(info.pop,0,1e7),money:clampN(info.money,-1e9,1e12),sat:clampN(info.sat,0,100),month:clampN(info.month,0,1e5),offer:info.offer&&typeof info.offer==='object'?info.offer:{},rx:info.rx||Date.now()};
+  NBP[d]={pid,ttl:info.ttl||60000,name:String(info.name||'névtelen').slice(0,24),pop:clampN(info.pop,0,1e7),money:clampN(info.money,-1e9,1e12),sat:clampN(info.sat,0,100),jobs:clampN(info.jobs,0,1e5),month:clampN(info.month,0,1e5),offer:info.offer&&typeof info.offer==='object'?info.offer:{},rx:info.rx||Date.now()};
   if(!was){pushMsg(`${NBP[d].name} csatlakozott: mostantól ő a(z) ${DIRNAME[d].toLowerCase()} szomszédod ${ROBOTNAME[d]} helyett.`,'good');renderNeighbors()}
   return d}
 function nbDropPlayer(pid,quiet){for(const d of DIRS)if(NBP[d]&&NBP[d].pid===pid){if(!quiet)pushMsg(`${NBP[d].name} már nem elérhető. A(z) ${DIRNAME[d].toLowerCase()} szomszéd újra ${ROBOTNAME[d]} (gépi).`);delete NBP[d];renderNeighbors()}}
@@ -924,6 +961,7 @@ function tradeTotals(){let inc=0,exp=0;const per={};
 const edgeTile=(d,n)=>d==='n'?n:d==='s'?(N-1)*N+n:d==='w'?n*N:n*N+N-1;
 const dirsWithRoad=()=>DIRS.filter(d=>{for(let n=0;n<N;n++)if(S.kind[edgeTile(d,n)]===ROAD)return true;return false});
 function hasRoadEdge(){return dirsWithRoad().length>0}
+function nbJobs(d){if(isPlayer(d))return Math.round(clampN(NBP[d].jobs,0,1e5));return S.nb&&S.nb[d]?Math.round(S.nb[d].jobs||0):0}
 function nbConnected(d,r){return r==='pow'?!!(T.connPow||{})[d]:r==='wat'?!!(T.connWat||{})[d]:(T.roadDirs||[]).includes(d)}
 // Amit egy játékos szomszédnak meghirdetünk (szomszédonként)
 function myOfferFor(d){const tm=S.trade,can=(m,side)=>m==='auto'||m===side,n=S.nb[d],o={};
@@ -933,7 +971,9 @@ function myOfferFor(d){const tm=S.trade,can=(m,side)=>m==='auto'||m===side,n=S.n
   for(const k of GKEYS)g(k,road?(T.gdAvail||{})[k]||0:0,road?(T.gdShort||{})[k]||0:0);
   return o}
 function marketMonth(){
+  resetMan();
   for(const d of DIRS){const n=S.nb[d];
+    if(!n.jf)n.jf=+(0.4+Math.random()).toFixed(2);n.jobs=Math.round(45*n.jf*(0.6+Math.random()*0.8)*(1+Math.min(2,S.month/240)));
     for(const r of RKEYS){const k=n.mk[r];
       if(isPlayer(d)){const th=theirOffer(d,r),mine=sentOffer(d,r);
         k.pm=Math.max(0.4,Math.min(2.5,Math.sqrt((th.def+mine.def+30)/(th.sur+mine.sur+30))));k.hist.push(+k.pm.toFixed(2));if(k.hist.length>24)k.hist.shift();continue}
@@ -946,10 +986,23 @@ function marketMonth(){
       const dem=sd*f*(0.4+Math.random()*0.9)*(0.4+k.m*0.6)*k.ev,sup=ss*f*(1.7-k.m*0.6)*(0.5+Math.random()*0.7)/(k.ev>1?2:1);
       k.dem=r==='cars'?Math.floor(dem+Math.random()):Math.round(Math.max(0,dem));k.sup=r==='cars'?Math.floor(sup+Math.random()):Math.round(Math.max(0,sup));
       k.hist.push(+k.m.toFixed(2));if(k.hist.length>24)k.hist.shift()}}}
+let MAN={};function resetMan(){MAN={};for(const d of DIRS){MAN[d]={};for(const r of RKEYS)MAN[d][r]={buy:0,sell:0}}}resetMan();
+function manualTrade(g,side,q){if(S.over)return;
+  const rd=(T.roadDirs||[]).filter(d=>!isPlayer(d)&&(side==='sell'?S.nb[d].allowSell:S.nb[d].allowBuy));
+  if(!rd.length)return pushMsg('Kézi kereskedéshez út kell valamelyik gépi szomszéd felé, és nála engedélyezve kell lennie a vételnek vagy eladásnak.','warn');
+  const G=S.goods;let left=side==='sell'?Math.min(q==='all'?G[g]:q,G[g]):Math.min(q,Math.max(0,goodsCap(g)-G[g]));
+  if(left<=0)return pushMsg(side==='sell'?'Nincs mit eladni ebből az áruból.':'Megtelt a raktár ebből az áruból. Építs raktárat.','warn');
+  const ord=rd.slice().sort((a,b)=>side==='sell'?price(b,g,'s')-price(a,g,'s'):price(a,g,'b')-price(b,g,'b'));let qty=0,val=0;
+  for(const d of ord){const k=S.nb[d].mk[g],room=side==='sell'?k.dem-MAN[d][g].sell:k.sup-MAN[d][g].buy,pr=price(d,g,side==='sell'?'s':'b');
+    let n=Math.max(0,Math.min(left,room));if(side==='buy')n=Math.min(n,Math.floor(Math.max(0,S.money)/pr));if(n<=0)continue;
+    MAN[d][g][side]+=n;left-=n;qty+=n;val+=n*pr;if(left<=0)break}
+  if(!qty)return pushMsg(side==='sell'?'Ebben a hónapban a szomszédok már nem vesznek többet ebből.':'Ebben a hónapban nincs több kínálat, vagy nincs rá pénz.','warn');
+  val=Math.round(val);if(side==='sell'){G[g]-=qty;S.money+=val;S.manMonth.inc+=val}else{G[g]+=qty;S.money-=val;S.manMonth.exp+=val}
+  pushMsg(`${side==='sell'?'Eladva':'Megvéve'}: ${fmtN(qty)} db ${GOODS[g].n.toLowerCase()}, ${fmtN(val)} Ft.`,'good');hud()}
 const fmtP=v=>v.toLocaleString('hu-HU',{minimumFractionDigits:1,maximumFractionDigits:1});
 
 /* ---------- gyártás ---------- */
-const DOMP={bread:3.2,cars:250};
+const DOMP={bread:2.4,cars:250};
 const domDemand=g=>g==='bread'?Math.round(T.pop*0.04):g==='cars'?Math.floor(T.pop*0.0015):0;
 function factoryState(i){if(S.build[i])return 'épül';if(S.burn[i])return 'ég';if(!powered[i])return 'nincs áram';if(!access[i])return 'nincs út';return 'működik'}
 function produceMonth(){
@@ -962,7 +1015,7 @@ function produceMonth(){
         if(G[g]<need){const m=S.trade[g];if(m==='buy'||m==='auto'){const got=buyFrom(g,rd,need-G[g]);G[g]+=got;bought[g]+=got}}
         if(G[g]<need)short[g]+=need-G[g];ratio=Math.min(ratio,need?G[g]/need:1)}
       for(const g in rc.in){const u=Math.floor(rc.in[g]*n*ratio);G[g]-=u;used[g]+=u}}
-    for(const g in rc.out){const q=Math.floor(rc.out[g]*n*ratio),add=Math.max(0,Math.min(q,GOODS[g].cap-G[g]));G[g]+=add;prod[g]+=add}}
+    for(const g in rc.out){const q=Math.floor(rc.out[g]*n*ratio),add=Math.max(0,Math.min(q,goodsCap(g)-G[g]));G[g]+=add;prod[g]+=add}}
   for(const g of ['bread','cars']){const d=Math.min(G[g],domDemand(g));G[g]-=d;dom[g]=d}
   const avail={};
   for(const g of GKEYS){const m=S.trade[g];let reserve=0;
@@ -996,7 +1049,7 @@ function renderResearch(){const R=S.research,rate=resRate();if(!$('techList'))re
 /* ---------- katasztrófák ---------- */
 const fx=[];let shakeUntil=0;
 const focusTile=i=>{const x=i%N,y=(i/N)|0;cam.x=(x-y)*HW;cam.y=(x+y)*HH};
-function wreck(i){const k=S.kind[i];if(isZone(k)){if(S.dens[i]){S.dens[i]=0;S.burn[i]=0;return 1}}else if(isFacility(k)){S.kind[i]=RUBBLE;S.dens[i]=0;S.burn[i]=0;S.build[i]=0;return 1}else if(k===PARK){S.kind[i]=RUBBLE;return 0}return 0}
+function wreck(i){const k=S.kind[i];if(isZone(k)){if(S.dens[i]){S.ruin[i]=k;S.ruinD[i]=S.dens[i];S.dens[i]=0;S.burn[i]=0;return 1}}else if(isFacility(k)){S.ruin[i]=k;S.ruinD[i]=0;S.kind[i]=RUBBLE;S.dens[i]=0;S.burn[i]=0;S.build[i]=0;return 1}else if(k===PARK){S.kind[i]=RUBBLE;return 0}return 0}
 function disaster(type){
   const R=Math.random,now=performance.now();let hit=0;
   if(type==='fire'){const b=[];for(let i=0;i<NN;i++)if(isBuilding(i)&&!S.burn[i])b.push(i);
@@ -1048,8 +1101,8 @@ function applyTiles(t,list){
     S.money-=c;spent+=c;n++;
     if(t.id==='pipe')S.pipe[i]=1;
     else if(t.id==='bull'&&overlay==='water')S.pipe[i]=0;
-    else if(t.id==='bull'){if(S.kind[i]){S.kind[i]=0;S.dens[i]=0;S.burn[i]=0;S.build[i]=0}else S.terrain[i]=0}
-    else{S.kind[i]=t.kind;S.dens[i]=0;S.burn[i]=0;S.build[i]=BUILD[t.kind]||0;if(S.terrain[i]===TREE)S.terrain[i]=0}}
+    else if(t.id==='bull'){if(S.kind[i]){S.kind[i]=0;S.dens[i]=0;S.burn[i]=0;S.build[i]=0;S.ruin[i]=0}else S.terrain[i]=0}
+    else{S.kind[i]=t.kind;S.dens[i]=0;S.burn[i]=0;S.ruin[i]=0;S.build[i]=BUILD[t.kind]||0;if(S.terrain[i]===TREE)S.terrain[i]=0}}
   if(blocked&&performance.now()-moneyWarnAt>3000){moneyWarnAt=performance.now();pushMsg('Nincs elég pénz a kassza­ban.','warn')}
   if(n){recompute();totals();hud();}
 }
@@ -1111,7 +1164,7 @@ const pal={
 const pick=(a,h)=>a[Math.floor(h*a.length)%a.length];
 function bHeight(i){const k=S.kind[i],d=S.dens[i];
   if(k===RZ)return [0,16,26,56][d];if(k===CZ)return [0,13,34,74][d];if(k===IZ)return [0,11,17,22][d];
-  return {26:30,27:14,28:24,29:16,30:20,24:5,25:46,23:40,6:22,7:52,8:17,9:17,10:15,11:29,14:24,15:10,16:6,17:20,18:14,19:20,20:32,21:12,22:48}[k]||0}
+  return {31:16,32:8,33:12,26:30,27:14,28:24,29:16,30:20,24:5,25:46,23:40,6:22,7:52,8:17,9:17,10:15,11:29,14:24,15:10,16:6,17:20,18:14,19:20,20:32,21:12,22:48}[k]||0}
 
 function drawGround(x,y,cx,cy,t){
   const i=y*N+x,k=S.kind[i],ter=S.terrain[i];
@@ -1147,7 +1200,8 @@ function drawObject(x,y,cx,cy,t){
       const nk=S.kind[Y*N+X];if(nk&&nk!==ROAD&&nk!==RUBBLE){const e=P(cx,cy,.5*dx,.5*dy);ctx.moveTo(cx,cy-22);ctx.quadraticCurveTo((cx+e[0])/2,(cy+e[1])/2-18,e[0],e[1]-(nk===LINE?22:10))}}
     ctx.stroke();return}
   if(k===PARK){tree(cx-12,cy-1,6,0);tree(cx+12,cy+1,5,1);tree(cx+2,cy+8,4.5,0);return}
-  if(k===ROAD||k===RUBBLE||(isZone(k)&&!d))return;
+  if(k===ROAD){drawCars(i,x,y,cx,cy,t);return}
+  if(k===RUBBLE||(isZone(k)&&!d)){if(S.ruin[i])drawRuin(i,cx,cy);return}
   const burning=S.burn[i]>0;
   if(S.build[i]){const tot=BUILD[k]||1,pr=Math.max(0,Math.min(1,1-S.build[i]/tot)),bh=Math.max(4,bHeight(i)*Math.max(.15,pr));
     ctx.fillStyle='#a08c6a';dia(cx,cy,.82);ctx.fill();
@@ -1241,6 +1295,14 @@ function drawObject(x,y,cx,cy,t){
   else if(k===CARF){box(cx,cy+2,.9,18,'#e6eaee');windows(cx,cy+2,.9,18,2,'rgba(80,120,160,.6)');const ty=cy+2-18;
     ctx.fillStyle='#c04848';ctx.fillRect(cx-9,ty-6,18,5);ctx.fillRect(cx-5,ty-10,10,4.5);ctx.fillStyle='#bfe0f2';ctx.fillRect(cx-3.5,ty-9,3,3);ctx.fillRect(cx+0.5,ty-9,3,3);
     ctx.fillStyle='#222';ctx.beginPath();ctx.arc(cx-5,ty-1,2,0,7);ctx.arc(cx+5,ty-1,2,0,7);ctx.fill()}
+  else if(k===WAREHOUSE){box(cx,cy+2,.88,13,'#b8a07a');ctx.strokeStyle='rgba(80,60,40,.45)';ctx.lineWidth=1;ctx.beginPath();for(let q=1;q<6;q++){const a=P(cx,cy+2,-.44+q*.15,.44);ctx.moveTo(a[0],a[1]);ctx.lineTo(a[0],a[1]-13)}ctx.stroke();
+    box(cx-14,cy+5,.14,5,'#8a6a40');box(cx-9,cy+8,.14,5,'#9a7a4a')}
+  else if(k===BUS){ctx.strokeStyle='#666';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(cx-8,cy);ctx.lineTo(cx-8,cy-12);ctx.moveTo(cx+4,cy+5);ctx.lineTo(cx+4,cy-7);ctx.stroke();
+    ctx.fillStyle='#4a90c0';ctx.beginPath();ctx.moveTo(cx-11,cy-12);ctx.lineTo(cx+7,cy-6);ctx.lineTo(cx+7,cy-8);ctx.lineTo(cx-11,cy-14);ctx.fill();
+    ctx.fillStyle='#e0b020';ctx.beginPath();ctx.arc(cx+10,cy-14,3.5,0,7);ctx.fill();ctx.strokeStyle='#555';ctx.beginPath();ctx.moveTo(cx+10,cy-10);ctx.lineTo(cx+10,cy+2);ctx.stroke();
+    if(((t*0.15+h)%1)<0.45){ctx.fillStyle='#e0b020';ctx.fillRect(cx-16,cy+2,16,6);ctx.fillStyle='#bfe0f2';ctx.fillRect(cx-15,cy+3,14,2)}}
+  else if(k===METRO){box(cx,cy+2,.6,11,'#d8dde2');ctx.fillStyle='#2f5fb0';ctx.beginPath();ctx.arc(cx,cy-18,6,0,7);ctx.fill();ctx.fillStyle='#fff';ctx.font='bold 8px system-ui,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('M',cx,cy-17.6);ctx.textAlign='start';ctx.textBaseline='alphabetic';
+    ctx.strokeStyle='#777';ctx.lineWidth=1.2;ctx.beginPath();ctx.moveTo(cx,cy-12);ctx.lineTo(cx,cy-9);ctx.stroke()}
   else if(k===HOSP){box(cx,cy,.76,29,'#eef0f0');windows(cx,cy,.76,29,4,'rgba(110,160,190,.7)');const ty=cy-29;ctx.strokeStyle='#d33';ctx.lineWidth=3.2;ctx.beginPath();ctx.moveTo(cx-9,ty-4.5);ctx.lineTo(cx+9,ty+4.5);ctx.moveTo(cx+9,ty-4.5);ctx.lineTo(cx-9,ty+4.5);ctx.stroke()}
   if(burning){const bh=bHeight(i);for(let f=0;f<5;f++){const a=hash(x,y,f+40),fl=Math.sin(t*12+f*2)*4;
     ctx.fillStyle=f%2?'rgba(255,170,30,.9)':'rgba(240,80,20,.9)';const fx=cx-14+a*28,fy=cy-bh*0.5+a*6;
@@ -1256,10 +1318,23 @@ function drawProblems(i,pr,cx,cy,t){
     ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.fill();ctx.stroke();
     if(c==='p'){ctx.fillStyle='#222';ctx.beginPath();ctx.moveTo(x+1.5*sc,y-5*sc);ctx.lineTo(x-3*sc,y+0.8*sc);ctx.lineTo(x,y+0.8*sc);ctx.lineTo(x-1.5*sc,y+5*sc);ctx.lineTo(x+3*sc,y-0.8*sc);ctx.lineTo(x,y-0.8*sc);ctx.closePath();ctx.fill()}
     else if(c==='w'){ctx.fillStyle='#fff';ctx.beginPath();ctx.moveTo(x,y-5*sc);ctx.quadraticCurveTo(x+4*sc,y,x+3.2*sc,y+2*sc);ctx.arc(x,y+1.8*sc,3.2*sc,0,Math.PI);ctx.quadraticCurveTo(x-4*sc,y,x,y-5*sc);ctx.fill()}
+    else if(c==='x'){ctx.fillStyle='#8a6f5a';ctx.beginPath();ctx.arc(x,y,r*0.86,0,7);ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=1.4*sc;ctx.beginPath();ctx.arc(x,y,r*0.45,0.6,5.6);ctx.stroke();ctx.fillStyle='#fff';ctx.beginPath();ctx.moveTo(x+r*0.45,y-r*0.55);ctx.lineTo(x+r*0.75,y-r*0.05);ctx.lineTo(x+r*0.15,y-r*0.1);ctx.fill()}
     else{ctx.fillStyle='#55595f';ctx.beginPath();ctx.moveTo(x-1.8*sc,y-4.5*sc);ctx.lineTo(x+1.8*sc,y-4.5*sc);ctx.lineTo(x+3.6*sc,y+4.5*sc);ctx.lineTo(x-3.6*sc,y+4.5*sc);ctx.closePath();ctx.fill();
       ctx.strokeStyle='#fff';ctx.lineWidth=1*sc;ctx.setLineDash([1.6*sc,1.6*sc]);ctx.beginPath();ctx.moveTo(x,y-4*sc);ctx.lineTo(x,y+4*sc);ctx.stroke();ctx.setLineDash([]);
       ctx.strokeStyle='#d33';ctx.lineWidth=1.6*sc;ctx.beginPath();ctx.moveTo(x-r*.7,y-r*.7);ctx.lineTo(x+r*.7,y+r*.7);ctx.stroke()}}}
+function drawRuin(i,cx,cy){const k=S.ruin[i];if(!k)return;
+  if(S.kind[i]!==RUBBLE){ctx.fillStyle='rgba(55,46,40,.55)';dia(cx,cy,.72);ctx.fill();ctx.fillStyle='#4a423c';for(let n=0;n<5;n++){const a=hash(i%N,(i/N)|0,n+77);ctx.fillRect(cx-12+a*24,cy-5+((a*31)%1)*10,3,2)}}
+  if(cam.z<0.55)return;const fs=9/Math.min(1,cam.z),label=KN[k]+(isZone(k)&&S.ruinD[i]?` ${S.ruinD[i]}.`:'');
+  ctx.font=`600 ${fs.toFixed(1)}px system-ui,sans-serif`;const w=ctx.measureText(label).width+fs*0.8;
+  ctx.fillStyle='rgba(30,26,24,.7)';ctx.fillRect(cx-w/2,cy-fs*2.1,w,fs*1.35);ctx.fillStyle='#f3efe8';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(label,cx,cy-fs*1.42);ctx.textAlign='start';ctx.textBaseline='alphabetic'}
+function drawCars(i,x,y,cx,cy,t){const tv=traffic[i];if(!tv||tv<4)return;
+  const con=[[1,0],[-1,0],[0,1],[0,-1]].filter(([dx,dy])=>{const X=x+dx,Y=y+dy;return X<0||Y<0||X>=N||Y>=N||S.kind[Y*N+X]===ROAD});if(!con.length)return;
+  const n=Math.min(4,1+Math.floor(tv/22)),slow=cong[i]>0.4?0.06:0.3;
+  for(let q=0;q<n;q++){const h=hash(x,y,q+5),c=con[Math.floor(h*con.length)%con.length],p=(((t*slow*(0.8+h*0.5)+h+q/n)%1)+1)%1;
+    const side=q%2?0.12:-0.12,e=c[0]?P(cx,cy,0.5*c[0]*(1-p*2),side):P(cx,cy,side,0.5*c[1]*(1-p*2));
+    ctx.fillStyle=['#d9483b','#f2f2f2','#3a6fd0','#e8b830','#4a4a4a'][Math.floor(h*5)%5];ctx.fillRect(e[0]-2.5,e[1]-3.5,5,3);ctx.fillStyle='rgba(0,0,0,.35)';ctx.fillRect(e[0]-2.5,e[1]-0.5,5,1)}}
 function ovColor(i){
+  if(overlay==='traffic'){if(S.kind[i]!==ROAD)return 'rgba(25,25,25,.22)';const l=traffic[i]/ROADCAP;return `hsla(${Math.max(0,125-l*62).toFixed(0)},85%,45%,.8)`}
   if(overlay==='power'){const c=cons(i);if(!conductor(S.kind[i]))return null;if(c&&!powered[i])return 'rgba(230,50,40,.55)';return powered[i]?'rgba(255,215,40,.45)':'rgba(120,120,120,.4)'}
   if(overlay==='pollution'){const v=pol[i]/70;return v>0.03?`rgba(110,70,20,${Math.min(.8,v)})`:null}
   if(overlay==='crime'){const v=crm[i]/60;return v>0.03?`rgba(140,30,160,${Math.min(.8,v)})`:null}
@@ -1314,6 +1389,7 @@ function render(now){
   if(objErr)reportErr('épület rajzolása',objErr);
   const ring=(i,R,col,dash)=>{const x=i%N,y=(i/N)|0;ctx.strokeStyle=col;ctx.lineWidth=2/z;ctx.setLineDash(dash?[8/z,6/z]:[]);ctx.beginPath();ctx.ellipse((x-y)*HW,(x+y)*HH,(R+.5)*HW*1.414,(R+.5)*HH*1.414,0,0,7);ctx.stroke();ctx.setLineDash([])};
   if(COVOV[overlay]){const kk=COVOV[overlay][0];for(let i=0;i<NN;i++)if(S.kind[i]===kk)ring(i,radOf(kk),`rgba(${COVOV[overlay][1]},.9)`,true)}
+  if(overlay==='traffic'){for(let i=0;i<NN;i++){if(S.kind[i]===BUS)ring(i,radOf(BUS),'rgba(224,176,32,.9)',true);else if(S.kind[i]===METRO)ring(i,radOf(METRO),'rgba(47,95,176,.9)',true)}}
   if(hover&&!gesture&&RAD[T0.kind]&&T0.mode==='single')ring(hover.y*N+hover.x,radOf(T0.kind),'rgba(255,255,255,.95)',false);
   for(let f=fx.length-1;f>=0;f--){const e=fx[f],p=(now-e.start)/e.dur;if(p>=1||p<0){fx.splice(f,1);continue}
     if(e.type==='flood'){ctx.fillStyle=`rgba(60,130,200,${0.6*(1-p)})`;for(const i of e.tiles){const x=i%N,y=(i/N)|0;dia((x-y)*HW,(x+y)*HH,1.03);ctx.fill()}}
@@ -1424,36 +1500,39 @@ function renderNeighbors(){const el=$('nbCards');if(!el)return;nbSweep();
     return `<div class="nbcard ${pl?'pl':''}"><div class="nbh"><b>${DIRNAME[d]}: ${esc(nbName(d))}</b><span>${pl?'játékos':'gépi'}</span></div>`+
       `<div class="chips">${chips}</div>`+
       `<div class="nbt"><button data-nbt="buy" data-d="${d}" aria-pressed="${!!n.allowBuy}">Veszünk tőle</button><button data-nbt="sell" data-d="${d}" aria-pressed="${!!n.allowSell}">Eladunk neki</button></div>`+
-      `<ul class="nbl">${lines||'<li>Előző hónapban nem volt forgalom.</li>'}</ul>`+
+      `<ul class="nbl">${lines||'<li>Előző hónapban nem volt forgalom.</li>'}${(T.commuteBy||{})[d]?`<li><b>Ingázók</b>: ${fmtN(T.commuteBy[d])} lakosod dolgozik itt</li>`:''}<li>Szabad munkahely nála: ${fmtN(nbJobs(d))}${(T.roadDirs||[]).includes(d)?'':' (út kell az ingázáshoz)'}</li></ul>`+
       `<div class="note">Ár, vétel/eladás: ${pr} Ft${pl?' (közös ár)':''}</div></div>`}).join('')}
 function bestPrices(g){const rd=T.roadDirs||[],ds=rd.length?rd:DIRS;let b=Infinity,s=0;for(const d of ds){b=Math.min(b,price(d,g,'b'));s=Math.max(s,price(d,g,'s'))}return{b:fmtP(b),s:fmtP(s),conn:rd.length>0}}
 function renderGoods(){const el=$('goodsList');if(!el)return;const gd=T.gd||{};
   el.innerHTML=GKEYS.map(g=>{const G=GOODS[g],m=S.trade[g],v=k=>fmtN(((gd[k]||{})[g])||0),bp=bestPrices(g);
-    const segs=['off','buy','sell','auto'].map(x=>`<button data-g="${g}" data-m="${x}" aria-pressed="${m===x}">${{off:'Ki',buy:'Vesz',sell:'Elad',auto:'Automata'}[x]}</button>`).join('');
+    const segs=['off','buy','sell','auto'].map(x=>`<button data-g="${g}" data-m="${x}" aria-pressed="${m===x}">${{off:'Raktároz',buy:'Vesz',sell:'Elad',auto:'Automata'}[x]}</button>`).join('');
+    const offers=(T.roadDirs||[]).filter(d=>!isPlayer(d)).map(d=>{const k=S.nb[d].mk[g];return `${ROBOTNAME[d]}: vesz ${fmtN(Math.max(0,k.dem-MAN[d][g].sell))} db × ${fmtP(price(d,g,'s'))} · ad ${fmtN(Math.max(0,k.sup-MAN[d][g].buy))} db × ${fmtP(price(d,g,'b'))} Ft`}).join('<br>');
     const dom=g==='bread'||g==='cars'?`<span>lakók vettek ${v('dom')} (${fmtN(domDemand(g))} kell)</span>`:'';
     const sh=(gd.short||{})[g]?`<span class="warn">hiányzott ${v('short')}</span>`:'';
-    return `<li><div class="th"><b>${G.n}</b><span>készlet ${fmtN(S.goods[g])} / ${fmtN(G.cap)}</span></div>`+
+    return `<li><div class="th"><b>${G.n}</b><span>készlet ${fmtN(S.goods[g])} / ${fmtN(goodsCap(g))}</span></div>`+
       `<div class="gstat"><span>gyártott ${v('prod')}</span><span>felhasznált ${v('used')}</span>${dom}<span>vett ${v('bought')}</span><span>eladott ${v('sold')}</span>${sh}</div>`+
       `<div class="note">${bp.conn?'Legjobb ár':'Ár (nincs út a szélig)'}: vétel ${bp.b} · eladás ${bp.s} Ft/db</div>`+
+      `<div class="note">${offers||'Kézi kereskedéshez út kell a térkép széléig.'}</div>`+
+      `<div class="mtr"><button data-mt="sell" data-g="${g}" data-q="10">Elad 10</button><button data-mt="sell" data-g="${g}" data-q="100">Elad 100</button><button data-mt="sell" data-g="${g}" data-q="all">Mindet</button><button data-mt="buy" data-g="${g}" data-q="10">Vesz 10</button><button data-mt="buy" data-g="${g}" data-q="100">Vesz 100</button></div>`+
       `<div class="seg">${segs}</div></li>`}).join('');
-  const L=S.lastGoods||{dom:0,exp:0,imp:0,up:0},net=L.dom+L.exp-L.imp-L.up,cnt=T.factories||{};
+  const L=S.lastGoods||{dom:0,exp:0,imp:0,up:0},net=L.dom+L.exp-L.imp-L.up,cnt=T.factories||{},MM=S.manMonth||{inc:0,exp:0};
   const fac=[MILL,BAKERY,STEELW,PARTSF,CARF].map(k=>{let all=0;for(let i=0;i<NN;i++)if(S.kind[i]===k)all++;return all?`${KN[k]} ${cnt[k]||0}/${all}`:''}).filter(Boolean).join(' · ');
-  $('prodSum').innerHTML=`<div class="row"><span>Lakóknak eladva</span><span class="v">+${fmtN(L.dom)} Ft</span></div><div class="row"><span>Szomszédnak eladva</span><span class="v">+${fmtN(L.exp)} Ft</span></div><div class="row"><span>Alapanyag-vásárlás</span><span class="v">−${fmtN(L.imp)} Ft</span></div><div class="row"><span>Gyárak fenntartása</span><span class="v">−${fmtN(L.up)} Ft</span></div><div class="row"><span><b>Gyártás haszna (előző hónap)</b></span><span class="v" style="color:${net<0?'var(--danger)':'var(--ok)'}">${net>=0?'+':'−'}${fmtN(Math.abs(net))} Ft</span></div><div class="note">${fac?'Működő gyárak: '+fac:'Még nincs gyárad. A Gyártás csoportban építhetsz.'}</div>`}
+  $('prodSum').innerHTML=`<div class="row"><span>Lakóknak eladva</span><span class="v">+${fmtN(L.dom)} Ft</span></div><div class="row"><span>Szomszédnak eladva</span><span class="v">+${fmtN(L.exp)} Ft</span></div><div class="row"><span>Alapanyag-vásárlás</span><span class="v">−${fmtN(L.imp)} Ft</span></div><div class="row"><span>Gyárak fenntartása</span><span class="v">−${fmtN(L.up)} Ft</span></div><div class="row"><span><b>Gyártás haszna (előző hónap)</b></span><span class="v" style="color:${net<0?'var(--danger)':'var(--ok)'}">${net>=0?'+':'−'}${fmtN(Math.abs(net))} Ft</span></div><div class="row"><span>Kézi kereskedés ebben a hónapban</span><span class="v">+${fmtN(MM.inc)} / −${fmtN(MM.exp)} Ft</span></div><div class="note">${fac?'Működő gyárak: '+fac+'. ':'Még nincs gyárad. A Gyártás csoportban építhetsz. '}Raktárhely: ${T.whN||0} raktár. Raktároz módban semmit nem ad el és nem vesz magától, te döntesz a kézi gombokkal.</div>`}
 function boardRows(){const rows=[{me:true,name:S.name,pop:T.pop,money:S.money,sat:T.sat}];for(const d of DIRS)if(isPlayer(d)){const p=NBP[d];rows.push({pid:p.pid,dir:d,name:p.name,pop:p.pop,money:p.money,sat:p.sat})}return rows.sort((a,b)=>b.pop-a.pop)}
 function renderBoard(withDrop){const rows=boardRows();
   const html=drop=>rows.map((r,ix)=>`<li><span class="rk">${ix+1}.</span><b>${esc(String(r.name).slice(0,24))}</b><span>${r.me?'(te)':DIRNAME[r.dir].toLowerCase()+' szomszéd'} · ${fmtN(r.pop)} lakos · ${fmtN(r.money)} Ft · ${Math.round(r.sat)}%</span>${drop&&!r.me?`<button class="mpdrop" data-drop="${esc(r.pid)}">Bontás</button>`:''}</li>`).join('')+(rows.length<2?'<li><span>Még nincs játékos szomszédod. Ha valaki csatlakozik a multihoz (Beállítás fül), itt látod a városát is.</span></li>':'');
   const a=$('mpList');if(a)a.innerHTML=html(withDrop);const b=$('boardCity');if(b)b.innerHTML=html(false)}
 $('nbCards').addEventListener('click',e=>{const b=e.target.closest('button[data-nbt]');if(!b)return;const n=S.nb[b.dataset.d];if(b.dataset.nbt==='buy')n.allowBuy=!n.allowBuy;else n.allowSell=!n.allowSell;recompute();totals();hud();mpWrite(true)});
-$('goodsList').addEventListener('click',e=>{const b=e.target.closest('button[data-g]');if(!b)return;S.trade[b.dataset.g]=b.dataset.m;renderGoods();mpWrite(true)});
+$('goodsList').addEventListener('click',e=>{const mb=e.target.closest('button[data-mt]');if(mb){manualTrade(mb.dataset.g,mb.dataset.mt,mb.dataset.q==='all'?'all':+mb.dataset.q);return}const b=e.target.closest('button[data-g]');if(!b)return;S.trade[b.dataset.g]=b.dataset.m;renderGoods();mpWrite(true)});
 $('techList').addEventListener('click',e=>{const b=e.target.closest('button[data-tech]');if(!b)return;S.research.cur=b.dataset.tech;
   const R=S.research,tc=TECH[R.cur];if(R.pts>=tc.cost)researchMonth(0);else{renderResearch();pushMsg(`Kutatás indult: ${tc.name}.`)}});
 $('resBudget').oninput=e=>{S.research.budget=+e.target.value;renderResearch()};
 let probIdx=-1,probList=[];
-function refreshProbs(){probList=[];let pw=0,wt=0,rd=0;for(let i=0;i<NN;i++){const p=problemsAt(i);if(p){probList.push(i);if(p.includes('p'))pw++;if(p.includes('w'))wt++;if(p.includes('r'))rd++}}
+function refreshProbs(){probList=[];let pw=0,wt=0,rd=0,rx=0;for(let i=0;i<NN;i++){const p=problemsAt(i);if(p){probList.push(i);if(p.includes('p'))pw++;if(p.includes('w'))wt++;if(p.includes('r'))rd++;if(p.includes('x'))rx++}}
   const b=$('probBtn');b.hidden=!probList.length;b.textContent=`Hibák: ${probList.length}`;
-  b.title=`Áram nélkül: ${pw} · víz nélkül: ${wt} · út nélkül: ${rd}. Kattints, és a következőhöz ugrik.`}
+  b.title=`Áram nélkül: ${pw} · víz nélkül: ${wt} · út nélkül: ${rd} · romok: ${rx}. Kattints, és a következőhöz ugrik.`}
 $('probBtn').onclick=()=>{refreshProbs();if(!probList.length)return;probIdx=(probIdx+1)%probList.length;const i=probList[probIdx];focusTile(i);inspect(i);
-  const p=problemsAt(i),w=[];if(p.includes('p'))w.push('nincs áram');if(p.includes('w'))w.push('nincs víz');if(p.includes('r'))w.push('nem éri el az utat (3 mezőn belül kell)');
+  const p=problemsAt(i),w=[];if(p.includes('p'))w.push('nincs áram');if(p.includes('w'))w.push('nincs víz');if(p.includes('r'))w.push('nem éri el az utat (3 mezőn belül kell)');if(p.includes('x'))w.push(`romok, korábban: ${KN[S.ruin[i]]} (újjáépíthető)`);
   setHint(`<b>${probIdx+1}. / ${probList.length} hiba</b> · ${KN[S.kind[i]]}: ${w.join(', ')}`)};
 $('goNew').onclick=()=>{const room=S.mpRoom;newGame();S.mpRoom=room;showGameOver();setSpeed(1);save(true)};
 $('saveBtn').onclick=()=>{save(false)};
@@ -1481,6 +1560,8 @@ function hud(){
   let rk=0;TITLES.forEach((t,ix)=>{if(T.pop>=t[0])rk=ix});$('rank').textContent=TITLES[rk][1];
   for(const [id,v] of [['dR',T.demR],['dC',T.demC],['dI',T.demI]]){const b=$(id),hgt=Math.abs(v)*50;b.style.height=hgt+'%';b.style.top=v>=0?(50-hgt)+'%':'50%';b.style.opacity=v>=0?1:.45}
   $('pJobs').textContent=`${fmtN(T.jobsC)} / ${fmtN(T.jobsI)} / ${fmtN(T.jobsS)}`;
+  {const pt=$('pTraffic');pt.textContent=`${fmtN(T.congRoads||0)} útszakasz`;pt.style.color=(T.congAvg||0)>0.5?'var(--danger)':''}
+  $('pCommute').textContent=fmtN(T.commute||0)+' fő';
   const ue=$('pUnemp');ue.textContent=Math.round(T.unemp*100)+'%';ue.style.color=T.unemp>0.2?'var(--danger)':'';
   const pw=$('pPower');pw.textContent=`${fmtN(T.supply)} / ${fmtN(T.need)} MW`;pw.style.color=T.need>T.supply?'var(--danger)':'';
   const pwt=$('pWater');pwt.textContent=`${fmtN(T.wSupply)} / ${fmtN(T.wNeed)}`;pwt.style.color=T.wShort>0?'var(--danger)':'';
@@ -1510,12 +1591,21 @@ function renderNews(){$('news').innerHTML=news.map(n=>`<li><b>${n.d}</b>${n.text
 
 let inspected=null;
 function meter(label,v,col){return `<div class="row"><span>${label}</span><span class="v">${Math.round(v)}</span></div><div class="meter"><i style="width:${Math.max(0,Math.min(100,v))}%;background:${col}"></i></div>`}
+function rebuild(i){const k=S.ruin[i],t=TOOLS.find(x=>x.kind===k);if(!t||S.kind[i]!==RUBBLE)return;
+  if(S.over)return;if(S.money<t.cost)return pushMsg('Nincs elég pénz az újjáépítésre.','warn');
+  if(t.unique&&S.kind.includes(k))return pushMsg(`Csak egy ${t.name.toLowerCase()} lehet a városban.`,'warn');
+  S.money-=t.cost;S.kind[i]=k;S.dens[i]=0;S.burn[i]=0;S.build[i]=BUILD[k]||0;S.ruin[i]=0;S.ruinD[i]=0;
+  recompute();totals();hud();inspect(i);pushMsg(`Újjáépítés indult: ${KN[k]}${BUILD[k]?`, ${BUILD[k]} hónap`:''}.`,'good')}
 function inspect(i,refresh){
   const el=$('info');inspected=i;
   if(i==null){el.hidden=true;return}
   const k=S.kind[i],d=S.dens[i],ter=S.terrain[i];
   let name=k?KN[k]:(ter===WATER?'Víz':ter===TREE?'Erdő':'Füves terület');
   let rows='';
+  if(S.ruin[i]){const rk=S.ruin[i],rt=TOOLS.find(t=>t.kind===rk);
+    rows+=`<div class="row"><span>Korábban itt</span><span class="v">${KN[rk]}${isZone(rk)&&S.ruinD[i]?` (${S.ruinD[i]}. szint)`:''}</span></div>`;
+    if(k===RUBBLE&&rt)rows+=`<button class="rebuild" id="rebuildBtn">Újjáépítés: ${fmtN(rt.cost)} Ft</button>`;
+    else if(isZone(k))rows+=`<div class="sub" style="text-transform:none;letter-spacing:0">Leégett. Magától újra beépül, ha van kereslet, áram és út.</div>`}
   if(isZone(k)){rows+=`<div class="sub">${d?d+'. szintű beépítés':'Beépítetlen övezet'}</div>`;
     if(k===RZ)rows+=`<div class="row"><span>Lakók</span><span class="v">${RPOP[d]}</span></div>`;
     else rows+=`<div class="row"><span>Munkahelyek</span><span class="v">${(k===CZ?CJOB:IJOB)[d]}</span></div>`;
@@ -1543,7 +1633,7 @@ function inspect(i,refresh){
   if(isZone(k)&&!refresh){}
   const x=i%N,y=(i/N)|0;
   el.innerHTML=`<h3><span>${name}</span><button aria-label="Bezárás" id="infoClose">×</button></h3><div class="sub">Mező ${x}, ${y}</div>${rows}`;
-  el.hidden=false;$('infoClose').onclick=()=>inspect(null);
+  el.hidden=false;$('infoClose').onclick=()=>inspect(null);const rb=$('rebuildBtn');if(rb)rb.onclick=()=>rebuild(i);
 }
 
 
@@ -1562,7 +1652,7 @@ function mpStatus(st,msg){MP.state=st;if(msg)$('mpNote').textContent=msg;$('mpJo
 function mpSend(pid,force){const c=MP.conns[pid];if(!c||!c.open)return;const d=dirOfPid(pid),now=Date.now();
   const offer=d?myOfferFor(d):{},chg=JSON.stringify(offer)!==JSON.stringify(MPsent[pid]);
   if(!force&&now-(MP.lastSend[pid]||0)<(chg?300:2000))return;MP.lastSend[pid]=now;if(d)MPsent[pid]=offer;
-  try{c.send({t:'state',city:String(S.name).slice(0,24),pop:T.pop,money:Math.round(S.money),sat:Math.round(T.sat),month:S.month,offer})}catch(e){}}
+  try{c.send({t:'state',city:String(S.name).slice(0,24),pop:T.pop,money:Math.round(S.money),sat:Math.round(T.sat),month:S.month,offer,jobsFree:Math.max(0,Math.round(T.jobsC+T.jobsI+T.jobsS-T.pop*0.55))})}catch(e){}}
 function mpWrite(force){for(const pid in MP.conns)mpSend(pid,force)}
 setInterval(()=>mpWrite(true),5000);
 function mpRender(){renderBoard(true);const n=DIRS.filter(isPlayer).length;
@@ -1580,7 +1670,7 @@ function attach(conn){const pid=pidOf(conn);if(!pid||pid===myCode()){try{conn.cl
   conn.on('data',d=>{if(!d||MP.conns[pid]!==conn)return;
     if(d.t==='full'){pushMsg('A társad városának már nincs szabad szomszéd-helye (négyen vannak).','warn');return}
     if(d.t!=='state')return;
-    const dir=nbSetPlayer(pid,{name:d.city,pop:d.pop,money:d.money,sat:d.sat,month:d.month,offer:d.offer});
+    const dir=nbSetPlayer(pid,{name:d.city,pop:d.pop,money:d.money,sat:d.sat,month:d.month,offer:d.offer,jobs:d.jobsFree});
     if(!dir){try{conn.send({t:'full'})}catch(e){}return}
     if(!MPsent[pid])mpSend(pid,true);mpRender()});
   conn.on('close',()=>{if(MP.conns[pid]===conn){delete MP.conns[pid];nbDropPlayer(pid);mpRender()}});
@@ -1623,7 +1713,7 @@ window.addEventListener('hashchange',hashJoin);
 
 /* ---------- mentés ---------- */
 function serialize(){return{nb:JSON.parse(JSON.stringify(S.nb||{})),nbSlots:{...(S.nbSlots||{})},goods:{...(S.goods||{})},lastGoods:S.lastGoods||null,lastDom:S.lastDom||0,mpMe:S.mpMe||null,mpLinks:(S.mpLinks||[]).slice(),mpBlock:(S.mpBlock||[]).slice(),research:JSON.parse(JSON.stringify(S.research||{})),over:S.over||null,showProbs:S.showProbs!==false,v:1,seed:S.seed,name:S.name,money:S.money,month:S.month,tax:S.tax,speed:S.speed,rank:S.rank,lastInc:S.lastInc,lastExp:S.lastExp,
-  terrain:Array.from(S.terrain),kind:Array.from(S.kind),dens:Array.from(S.dens),burn:Array.from(S.burn),build:Array.from(S.build),pipe:Array.from(S.pipe),trade:{...S.trade},lastTrade:S.lastTrade,taxR:S.taxR,taxC:S.taxC,taxI:S.taxI,loans:S.loans.map(l=>({...l})),mission:S.mission,disasters:S.disasters,gExport:S.gExport,mpRoom:S.mpRoom||null,watStock:S.watStock||0,lfStock:S.lfStock||0,lfWarn:S.lfWarn||0,lastLoan:S.lastLoan,hiTechMsg:S.hiTechMsg,cam:{x:cam.x,y:cam.y,z:cam.z},news:news.slice()}}
+  terrain:Array.from(S.terrain),kind:Array.from(S.kind),dens:Array.from(S.dens),burn:Array.from(S.burn),ruin:Array.from(S.ruin),ruinD:Array.from(S.ruinD),build:Array.from(S.build),pipe:Array.from(S.pipe),trade:{...S.trade},lastTrade:S.lastTrade,taxR:S.taxR,taxC:S.taxC,taxI:S.taxI,loans:S.loans.map(l=>({...l})),mission:S.mission,disasters:S.disasters,gExport:S.gExport,mpRoom:S.mpRoom||null,watStock:S.watStock||0,lfStock:S.lfStock||0,lfWarn:S.lfWarn||0,lastLoan:S.lastLoan,hiTechMsg:S.hiTechMsg,cam:{x:cam.x,y:cam.y,z:cam.z},news:news.slice()}}
 function load(d){if(!d||d.v!==1||!d.kind||d.kind.length!==NN)return false;
   S={...d,terrain:Uint8Array.from(d.terrain),kind:Uint8Array.from(d.kind),dens:Uint8Array.from(d.dens),burn:Uint8Array.from(d.burn),build:d.build&&d.build.length===NN?Uint8Array.from(d.build):new Uint8Array(NN),
     pipe:d.pipe&&d.pipe.length===NN?Uint8Array.from(d.pipe):new Uint8Array(NN),trade:d.trade||{pow:'auto',wat:'auto'},lastTrade:d.lastTrade||0};
