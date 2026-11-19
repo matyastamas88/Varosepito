@@ -48,19 +48,20 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 #tools{min-width:0}
 
 /* felső sáv */
-.top{display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:var(--panel);border-bottom:1px solid var(--line);
-  padding-block:8px;padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));position:relative;z-index:5}
+.top{display:flex;align-items:center;gap:12px;flex-wrap:nowrap;background:var(--panel);border-bottom:1px solid var(--line);
+  padding-block:4px;padding-left:max(14px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));position:relative;z-index:5}
 .city{display:flex;flex-direction:column;min-width:0}
-.city input{font-family:var(--font-ui);font-weight:800;font-size:19px;letter-spacing:-.01em;border:0;background:transparent;color:var(--ink);padding:0;width:11ch;min-width:0}
+.city input{font-family:var(--font-ui);font-weight:800;font-size:17px;letter-spacing:-.01em;border:0;background:transparent;color:var(--ink);padding:0;width:11ch;min-width:0}
 .city input:hover{text-decoration:underline dotted var(--muted)}
-.city .rank{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--accent);font-weight:600}
-.stats{display:flex;gap:18px;flex-wrap:wrap;margin-right:auto}
-.stat{display:flex;flex-direction:column;gap:1px}
-.stat .l{font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
-.stat .v{font-family:var(--font-num);font-weight:600;font-size:15px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.city .rank{font-size:10px;text-transform:uppercase;letter-spacing:.09em;color:var(--accent);font-weight:600}
+.stats{display:flex;gap:16px;flex-wrap:nowrap;flex:1 1 auto;min-width:0;overflow-x:auto;scrollbar-width:none;padding-block:2px}
+.stats::-webkit-scrollbar{display:none}
+.stat{display:flex;flex-direction:column;gap:0;flex:0 0 auto}
+.stat .l{font-size:9.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.stat .v{font-family:var(--font-num);font-weight:600;font-size:14px;font-variant-numeric:tabular-nums;white-space:nowrap}
 .stat .v.neg{color:var(--danger)}
 .stat .v.pos{color:var(--ok)}
-.stat .d{font-family:var(--font-num);font-size:10.5px;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.stat .d{display:none;font-family:var(--font-num);font-size:10.5px;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
 .stat.util{cursor:help}
 .stat.stock{cursor:pointer;border:0;background:transparent;padding:0;text-align:left;font:inherit;color:inherit}
 .stat.stock:hover .l{color:var(--accent)}
@@ -69,12 +70,12 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 .tbtop{display:flex;align-items:center;gap:10px}
 .tbtop #hint{flex:1;min-width:0}
 .probbtn{border-color:var(--danger)!important;color:var(--danger)}
-.homebtn{flex:0 0 auto;border:1px solid var(--line);background:var(--panel-2);border-radius:8px;padding:6px 10px;font-size:12.5px;font-weight:600;cursor:pointer}
+.homebtn{flex:0 0 auto;border:1px solid var(--line);background:var(--panel-2);border-radius:8px;padding:4px 9px;font-size:12.5px;font-weight:600;cursor:pointer}
 .speed{flex:0 0 auto;display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
-.speed button{border:0;background:transparent;padding:7px 10px;font-family:var(--font-num);font-size:12.5px;font-weight:600;cursor:pointer;min-width:38px}
+.speed button{border:0;background:transparent;padding:4px 9px;font-family:var(--font-num);font-size:12.5px;font-weight:600;cursor:pointer;min-width:38px}
 .speed button+button{border-left:1px solid var(--line)}
 .speed button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
-.hallbtn{border:1px solid var(--line);background:var(--panel-2);padding:7px 12px;border-radius:8px;cursor:pointer;font-weight:600}
+.hallbtn{flex:0 0 auto;border:1px solid var(--line);background:var(--panel-2);padding:6px 11px;border-radius:8px;cursor:pointer;font-weight:600}
 .hallbtn[aria-pressed="true"]{border-color:var(--accent);color:var(--accent)}
 
 /* térkép */
@@ -120,7 +121,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 .gocard p{margin:0;color:var(--muted);line-height:1.45}
 .gotag{align-self:flex-start;background:var(--danger);color:#fff;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:3px 8px;border-radius:4px}
 .gonew{background:var(--accent)!important;border-color:var(--accent)!important;color:var(--accent-ink)}
-#info{position:absolute;left:max(12px, env(safe-area-inset-left, 0px));bottom:12px;width:260px;background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);padding:12px 14px;z-index:4;display:flex;flex-direction:column;gap:6px}
+#info{position:absolute;left:max(12px, env(safe-area-inset-left, 0px));bottom:12px;width:250px;max-height:calc(100% - 24px);overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);padding:12px 14px;z-index:4;display:flex;flex-direction:column;gap:6px}
 #info h3{margin:0;font-size:16px;font-weight:800;display:flex;justify-content:space-between;align-items:center;gap:8px}
 #info h3 button{border:0;background:transparent;font-size:18px;line-height:1;cursor:pointer;color:var(--muted);padding:2px 6px}
 #info .sub{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
@@ -131,16 +132,16 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 .pill.no{background:color-mix(in srgb, var(--danger) 18%, transparent);color:var(--danger)}
 
 /* eszköztár */
-.toolbar{background:var(--panel);border-top:1px solid var(--line);padding-block:6px 8px;padding-left:max(10px, env(safe-area-inset-left, 0px));padding-right:max(10px, env(safe-area-inset-right, 0px));display:flex;flex-direction:column;gap:5px;z-index:5}
+.toolbar{background:var(--panel);border-top:1px solid var(--line);padding-block:4px 5px;padding-left:max(10px, env(safe-area-inset-left, 0px));padding-right:max(10px, env(safe-area-inset-right, 0px));display:flex;flex-direction:column;gap:3px;z-index:5}
 #hint{font-size:12.5px;color:var(--muted);min-height:1.3em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-inline:4px}
 #hint b{color:var(--ink);font-weight:600}
 #tools{display:flex;gap:4px;overflow-x:auto;scrollbar-width:thin;padding-bottom:2px}
-.tool{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 7px 5px;border:1px solid transparent;border-radius:8px;background:transparent;cursor:pointer;min-width:66px}
+.tool{flex:0 0 auto;display:flex;flex-direction:row;align-items:center;gap:6px;padding:4px 8px;border:1px solid transparent;border-radius:8px;background:transparent;cursor:pointer;min-width:0}
 .tool:hover{background:var(--panel-2)}
 .tool[aria-pressed="true"]{background:var(--panel-2);border-color:var(--accent);box-shadow:inset 0 -3px 0 var(--accent)}
-.tool .sw{width:22px;height:22px;transform:rotate(45deg) scale(.82);border-radius:3px;border:1px solid rgba(0,0,0,.18)}
-.tool .n{font-size:12px;font-weight:600;white-space:nowrap}
-.tool .c{font-family:var(--font-num);font-size:10.5px;color:var(--muted)}
+.tool .sw{flex:0 0 auto;width:14px;height:14px;transform:rotate(45deg) scale(.82);border-radius:3px;border:1px solid rgba(0,0,0,.18)}
+.tool .n{font-size:11.5px;font-weight:600;white-space:nowrap}
+.tool .c{display:none;font-family:var(--font-num);font-size:10.5px;color:var(--muted)}
 .tool.sep{margin-left:8px}
 
 .tabs{display:flex;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--panel);z-index:1}
@@ -267,14 +268,16 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 .mkt b{color:var(--ink);font-family:var(--font-num);font-weight:500}
 .mkt i{font-style:normal;color:var(--accent)}
 @media (max-width:760px){
-  .top{gap:8px 12px;padding-block:6px}
-  .city input{font-size:16px;width:9ch}
-  .stats{gap:12px;order:3;width:100%;margin-right:0}
-  .stat .v{font-size:13.5px}
-  .speed button{padding:6px 8px;min-width:32px}
+  .top{flex-wrap:wrap;gap:2px 8px;padding-block:3px}
+  .city{flex-direction:row;align-items:baseline;gap:8px;margin-right:auto}
+  .city input{font-size:15px;width:9ch}
+  .stats{gap:12px;order:3;flex:1 1 100%;width:100%}
+  .stat .v{font-size:13px}
+  .hallbtn{padding:4px 9px}
+  .speed button{padding:4px 7px;min-width:30px}
   #panel{left:max(8px, env(safe-area-inset-left, 0px));right:max(8px, env(safe-area-inset-right, 0px));width:auto;top:auto;bottom:8px;max-height:62%}
   #info{left:8px;right:8px;width:auto;bottom:8px}
-  .tool{min-width:60px;padding:5px 5px 4px}
+  .tool{padding:4px 7px}
   .kbd{display:none}
 }
 @media (prefers-reduced-motion: reduce){ .msg{animation:none} .rci .bar{transition:none} }
@@ -293,12 +296,13 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
       <div class="stat"><span class="l">Lakosság</span><span class="v" id="sPop">0</span></div>
       <div class="stat"><span class="l">Havi egyenleg</span><span class="v" id="sNet">0 Ft</span></div>
       <div class="stat"><span class="l">Elégedettség</span><span class="v" id="sSat">–</span></div>
-      <div class="stat util" title="Kapacitás mínusz igény. Alatta: kapacitás / igény MW-ban. A szomszédtól vett áram beleszámít."><span class="l">Áram</span><span class="v" id="uPow">–</span><span class="d" id="uPowD"></span></div>
-      <div class="stat util" title="Kapacitás mínusz igény. Alatta: kapacitás / igény. A szomszédtól vett víz beleszámít."><span class="l">Víz</span><span class="v" id="uWat">–</span><span class="d" id="uWatD"></span></div>
-      <div class="stat util" title="Tisztítókapacitás mínusz keletkező szennyvíz. Alatta: kapacitás / keletkező."><span class="l">Szennyvíz</span><span class="v" id="uSew">–</span><span class="d" id="uSewD"></span></div>
-      <div class="stat util" title="Feldolgozó kapacitás (plusz amit a szomszéd elvisz) mínusz keletkező szemét. Alatta: kapacitás / keletkező."><span class="l">Szemét</span><span class="v" id="uGarb">–</span><span class="d" id="uGarbD"></span></div>
+      <div class="stat util" title="Kapacitás mínusz igény. Részletek: kapacitás / igény MW-ban. A szomszédtól vett áram beleszámít."><span class="l">Áram</span><span class="v" id="uPow">–</span><span class="d" id="uPowD"></span></div>
+      <div class="stat util" title="Kapacitás mínusz igény. Részletek: kapacitás / igény. A szomszédtól vett víz beleszámít."><span class="l">Víz</span><span class="v" id="uWat">–</span><span class="d" id="uWatD"></span></div>
+      <div class="stat util" title="Tisztítókapacitás mínusz keletkező szennyvíz. Részletek: kapacitás / keletkező."><span class="l">Szennyvíz</span><span class="v" id="uSew">–</span><span class="d" id="uSewD"></span></div>
+      <div class="stat util" title="Feldolgozó kapacitás (plusz amit a szomszéd elvisz) mínusz keletkező szemét. Részletek: kapacitás / keletkező."><span class="l">Szemét</span><span class="v" id="uGarb">–</span><span class="d" id="uGarbD"></span></div>
       <button class="stat util stock" id="stockStat" type="button" title="Árukészlet. Kattints a részletekért (Gyártás fül)."><span class="l">Készlet</span><span class="v sm" id="uStock">–</span><span class="d" id="uStockD"></span></button>
     </div>
+    <button class="hallbtn helpbtn" id="fsBtn" title="Teljes képernyő" aria-label="Teljes képernyő" hidden>⛶</button>
     <button class="hallbtn helpbtn" id="helpBtn" title="Útmutató: mi mire való" aria-label="Útmutató">?</button>
     <button class="hallbtn" id="hallBtn" aria-pressed="true">Városháza</button>
   </header>
@@ -1618,7 +1622,8 @@ function buildTools(){const box=$('tools');let grp=null,row=null;
   TOOLS.forEach((t,ix)=>{if(t.g!==grp){grp=t.g;const g=document.createElement('div');g.className='tgroup';const l=document.createElement('span');l.className='tg-l';l.textContent=grp;row=document.createElement('div');row.className='tg-b';g.appendChild(l);g.appendChild(row);box.appendChild(g)}
     const b=document.createElement('button');b.className='tool';b.id='tool-'+t.id;b.setAttribute('aria-pressed',t.id===tool);
     b.innerHTML=`<span class="sw" style="background:${t.sw}"></span><span class="n">${t.name}</span><span class="c">${t.cost?fmtN(t.cost):'—'}</span>`;
-    b.title=t.hint;b.onclick=()=>selectTool(t.id);row.appendChild(b)})}
+    b.title=t.hint+(t.cost?` (ár: ${fmtN(t.cost)} Ft)`:'');b.onclick=()=>selectTool(t.id);row.appendChild(b)})
+  box.addEventListener('wheel',e=>{if(Math.abs(e.deltaY)>Math.abs(e.deltaX)&&box.scrollWidth>box.clientWidth){box.scrollLeft+=e.deltaY;e.preventDefault()}},{passive:false})}
 let autoOv=false;
 function setOverlay(ov){overlay=ov;document.querySelectorAll('#ovSeg button').forEach(x=>x.setAttribute('aria-pressed',x.dataset.ov===ov))}
 function selectTool(id){tool=id;document.querySelectorAll('.tool').forEach(b=>b.setAttribute('aria-pressed',b.id==='tool-'+id));cv.classList.toggle('pan',false);
@@ -1641,9 +1646,11 @@ document.querySelectorAll('#disBtns button').forEach(b=>b.onclick=()=>disaster(b
 $('cityName').onchange=e=>{S.name=e.target.value.trim()||'Újfalu';e.target.value=S.name};
 document.querySelectorAll('#ovSeg button').forEach(b=>b.onclick=()=>{setOverlay(b.dataset.ov);autoOv=false;if(tool==='bull')selectTool('bull')});
 const panel=$('panel'),hallBtn=$('hallBtn');
-function showPanel(on){panel.hidden=!on;hallBtn.setAttribute('aria-pressed',on)}
+function showPanel(on){panel.hidden=!on;hallBtn.setAttribute('aria-pressed',on);try{localStorage.setItem('va-panel',on?'1':'0')}catch(e){}}
 hallBtn.onclick=()=>{showPanel(panel.hidden);hud()};
-showPanel(window.innerWidth>760);
+{let pv=null;try{pv=localStorage.getItem('va-panel')}catch(e){}showPanel(pv!=null?pv==='1':window.innerWidth>=1500)}
+{const fb=$('fsBtn'),de=document.documentElement;if(fb&&document.fullscreenEnabled&&de.requestFullscreen){fb.hidden=false;
+  fb.onclick=()=>{if(document.fullscreenElement)document.exitFullscreen();else de.requestFullscreen().catch(()=>{})}}}
 $('homeBtn').onclick=()=>centerCam();
 $('stockStat').onclick=()=>{showPanel(true);const b=document.querySelector('.tabs button[data-tab="prod"]');if(b)b.click()};
 $('ordList').addEventListener('click',e=>{const b=e.target.closest('button[data-ord]');if(!b)return;const id=b.dataset.ord,o=ORDS.find(x=>x.id===id);S.ord[id]=!S.ord[id];calcOE();recompute();totals();hud();
@@ -1684,7 +1691,7 @@ function helpSections(){
    <h4>Víz</h4><p>A vízmű termeli (víz mellett többet). A föld alatti <b>vízcső</b> 2 mezős körben ellátja az épületeket. A <b>víztorony</b> tárolja a felesleget: hiánykor innen pótol, és a szomszédnak csak a tárolt vízből tudsz eladni.</p>
    <h4>Szennyvíz</h4><p>Amelyik épület vizet kap, szennyvizet is termel. A <b>szennyvíztisztító</b>nak a vízhálózaton kell lennie, különben a kezeletlen szennyvíz szennyez.</p>
    <h4>Szemét</h4><p>A <b>hulladéklerakó</b> lassan megtelik. A <b>szemétégető</b> áramot is termel, de szennyez. Az <b>újrahasznosító</b> tiszta, de drága. Az égető és az újrahasznosító szabad kapacitása apasztja a lerakót.</p>
-   <div class="tip">A felső sávban minden közműnél a nagy szám a kapacitás mínusz az igény. Piros, ha hiány van. Alatta: kapacitás / igény.</div>`},
+   <div class="tip">A felső sávban minden közműnél a nagy szám a kapacitás mínusz az igény. Piros, ha hiány van. Részletek: kapacitás / igény.</div>`},
   {id:'services',t:'Szolgáltatások és különleges épületek',h:`<p>A <b>rendőrség</b> a bűnözést csökkenti, a <b>tűzoltóság</b> megfékezi a tüzet, az <b>iskola</b> és a <b>kórház</b> telekértéket és elégedettséget ad, a <b>park</b> szebb környéket és kevesebb szennyezést. Mindegyik csak a saját körzetében hat. Építéskor egy kör mutatja, meddig ér el.</p>
    <p><b>Különleges épületek</b> (emlékmű, városháza, stadion, vidámpark) a város rangjával nyílnak meg, és mindegyikből egy lehet.</p>`},
   {id:'money',t:'Pénz: adók, hitel, csőd',h:`<ul><li><b>Bevétel:</b> lakó-, kereskedelmi és ipari adó (külön csúszkával), eladás a szomszédoknak, a lakóknak eladott kenyér és autó.</li>
@@ -1856,7 +1863,7 @@ function drawChart(){const svg=$('chSvg'),wrap=$('chWrap'),tip=$('chTip');tip.hi
 function openChart(k){CH.k=k;$('chMetric').innerHTML=HM.map(h=>`<button data-k="${h.k}">${h.n}</button>`).join('');$('chartModal').hidden=false;drawChart()}
 function closeChart(){$('chartModal').hidden=true}
 function hud(){
-  $('sDate').textContent=`${1950+Math.floor(S.month/12)}. ${MONTHS[S.month%12]}`;$('sPhase').textContent=(isNight()?'☾ éjszaka':'☀ nappal')+' · '+SE().n;
+  $('sDate').textContent=`${1950+Math.floor(S.month/12)}. ${MONTHS[S.month%12]} ${isNight()?'☾':'☀'}`;$('sPhase').textContent=(isNight()?'☾ éjszaka':'☀ nappal')+' · '+SE().n;
   const m=$('sMoney');m.textContent=fmtN(S.money)+' Ft';m.classList.toggle('neg',S.money<0);
   $('sPop').textContent=fmtN(T.pop);
   const bal=(id,cap,need,unit)=>{const b=Math.round(cap-need),e=$(id);e.textContent=(b>0?'+':b<0?'−':'±')+fmtN(Math.abs(b))+(unit?' '+unit:'');
@@ -1870,6 +1877,7 @@ function hud(){
   if(T.lfCap)$('uGarbD').textContent+=` · lerakó ${Math.round((S.lfStock||0)/T.lfCap*100)}%`;
   $('pWStore').textContent=T.watStockCap?`${fmtN(S.watStock||0)} / ${fmtN(T.watStockCap)}`:'nincs víztorony';
   {const lfp=T.lfCap?Math.round((S.lfStock||0)/T.lfCap*100):0,lfe=$('pLf');lfe.textContent=T.lfCap?`${fmtN(S.lfStock||0)} / ${fmtN(T.lfCap)} (${lfp}%)`:'nincs lerakó';lfe.style.color=lfp>=90?'var(--danger)':''}
+  document.querySelectorAll('.stat .d').forEach(d=>{const p=d.parentNode;if(!p||!p.dataset)return;if(p.dataset.t==null)p.dataset.t=p.title||'';const tx=d.textContent;p.title=p.dataset.t+(tx?(p.dataset.t?'\n':'')+tx:'')});
   const net=S.lastInc-S.lastExp,ne=$('sNet');ne.textContent=(net>0?'+':'')+fmtN(net)+' Ft';ne.classList.toggle('neg',net<0);
   let rk=0;TITLES.forEach((t,ix)=>{if(T.pop>=t[0])rk=ix});$('rank').textContent=TITLES[rk][1];
   for(const [id,v] of [['dR',T.demR],['dC',T.demC],['dI',T.demI]]){const b=$(id),hgt=Math.abs(v)*50;b.style.height=hgt+'%';b.style.top=v>=0?(50-hgt)+'%':'50%';b.style.opacity=v>=0?1:.45}
