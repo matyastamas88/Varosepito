@@ -167,6 +167,30 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 .spark .sv i{font-style:normal;color:var(--muted);font-size:10px}
 #chartModal{position:absolute;inset:0;z-index:25;display:grid;place-items:center;background:rgba(10,16,20,.5);padding:12px}
 .chcard{background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);width:min(760px,100%);max-height:100%;overflow:auto;padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.helpbtn{font-weight:800;min-width:36px;padding-inline:0!important}
+#helpModal{position:absolute;inset:0;z-index:26;display:grid;place-items:center;background:rgba(10,16,20,.55);padding:12px}
+.hlpcard{background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);width:min(940px,100%);height:min(88vh,100%);display:flex;flex-direction:column;padding:14px 16px;gap:10px;min-height:0}
+.hlpbody{flex:1;min-height:0;display:grid;grid-template-columns:200px minmax(0,1fr);gap:16px}
+.hlptoc{overflow:auto;display:flex;flex-direction:column;gap:2px;border-right:1px solid var(--line);padding-right:8px}
+.hlptoc button{text-align:left;border:0;background:transparent;padding:6px 8px;border-radius:6px;cursor:pointer;font-size:13px;color:var(--ink)}
+.hlptoc button:hover{background:var(--panel-2)}
+.hlptoc button[aria-current="true"]{background:var(--accent);color:var(--accent-ink)}
+.hlpmain{overflow:auto;padding-right:6px;line-height:1.55;font-size:14px}
+.hlpmain section{padding-bottom:18px;margin-bottom:18px;border-bottom:1px solid var(--line);max-width:68ch}
+.hlpmain h3{font-size:17px;margin:0 0 8px;font-weight:800;text-wrap:balance}
+.hlpmain h4{font-size:13px;margin:12px 0 4px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+.hlpmain p{margin:6px 0}
+.hlpmain ul,.hlpmain ol{margin:6px 0;padding-left:20px}
+.hlpmain li{margin:3px 0}
+.hlpmain .tip{background:var(--panel-2);border-left:3px solid var(--accent);padding:6px 10px;border-radius:4px;margin:8px 0;font-size:13px}
+.hlptbl{width:100%;border-collapse:collapse;font-size:12.5px;margin:6px 0}
+.hlptbl th,.hlptbl td{text-align:left;padding:5px 6px;border-bottom:1px solid var(--line);vertical-align:top}
+.hlptbl th{color:var(--muted);font-weight:600;font-size:11.5px;text-transform:uppercase;letter-spacing:.05em}
+.hlptbl td.n{font-family:var(--font-num);white-space:nowrap;font-variant-numeric:tabular-nums}
+.tblwrap{overflow-x:auto}
+.hq{border:1px solid var(--line);background:var(--panel-2);color:var(--muted);border-radius:50%;width:18px;height:18px;font-size:11px;font-weight:700;line-height:1;cursor:pointer;margin-left:6px;vertical-align:middle;padding:0}
+.hq:hover{color:var(--accent);border-color:var(--accent)}
+@media (max-width:760px){.hlpbody{grid-template-columns:1fr;grid-template-rows:auto minmax(0,1fr);gap:8px}.hlptoc{flex-direction:row;overflow-x:auto;border-right:0;border-bottom:1px solid var(--line);padding:0 0 6px}.hlptoc button{white-space:nowrap;flex:0 0 auto}.hlpcard{height:100%}}
 .chhead{display:flex;justify-content:space-between;align-items:center;gap:8px}
 .chhead h2{margin:0;font-size:18px;font-weight:800}
 .chhead button{border:0;background:transparent;font-size:22px;line-height:1;cursor:pointer;color:var(--muted);padding:2px 8px}
@@ -270,6 +294,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
       <div class="stat util" title="Tisztítókapacitás mínusz keletkező szennyvíz. Alatta: kapacitás / keletkező."><span class="l">Szennyvíz</span><span class="v" id="uSew">–</span><span class="d" id="uSewD"></span></div>
       <div class="stat util" title="Feldolgozó kapacitás (plusz amit a szomszéd elvisz) mínusz keletkező szemét. Alatta: kapacitás / keletkező."><span class="l">Szemét</span><span class="v" id="uGarb">–</span><span class="d" id="uGarbD"></span></div>
     </div>
+    <button class="hallbtn helpbtn" id="helpBtn" title="Útmutató: mi mire való" aria-label="Útmutató">?</button>
     <button class="hallbtn" id="hallBtn" aria-pressed="true">Városháza</button>
   </header>
 
@@ -437,6 +462,15 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
     </aside>
 
     <div id="info" hidden></div>
+    <div id="helpModal" hidden role="dialog" aria-modal="true" aria-labelledby="hlpTitle">
+      <div class="hlpcard">
+        <div class="chhead"><h2 id="hlpTitle">Útmutató</h2><button id="hlpClose" aria-label="Bezárás">×</button></div>
+        <div class="hlpbody">
+          <nav class="hlptoc" id="hlpToc" aria-label="Tartalom"></nav>
+          <div class="hlpmain" id="hlpMain" tabindex="0"></div>
+        </div>
+      </div>
+    </div>
     <div id="chartModal" hidden role="dialog" aria-modal="true" aria-labelledby="chTitle">
       <div class="chcard">
         <div class="chhead"><h2 id="chTitle">Grafikon</h2><button id="chClose" aria-label="Bezárás">×</button></div>
@@ -1551,7 +1585,7 @@ cv.addEventListener('wheel',e=>{e.preventDefault();const p=loc(e);const w=toWorl
 const keys=new Set();
 window.addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;
   if(e.code==='Space'){e.preventDefault();setSpeed(S.speed?0:(lastSpeed||1))}
-  else if(e.key==='Escape'){gesture=null;setHint();closeChart()}
+  else if(e.key==='Escape'){gesture=null;setHint();closeChart();if($('helpModal').hidden===false)closeHelp()}
   else keys.add(e.key.toLowerCase())});
 window.addEventListener('keyup',e=>keys.delete(e.key.toLowerCase()));
 
@@ -1595,6 +1629,101 @@ $('ordList').addEventListener('click',e=>{const b=e.target.closest('button[data-
 $('sparkList').addEventListener('click',e=>{const b=e.target.closest('button[data-chart]');if(b)openChart(b.dataset.chart)});
 $('chMetric').addEventListener('click',e=>{const b=e.target.closest('button[data-k]');if(b){CH.k=b.dataset.k;drawChart()}});
 $('chRange').addEventListener('click',e=>{const b=e.target.closest('button[data-r]');if(b){CH.range=+b.dataset.r;drawChart()}});
+
+/* ---------- útmutató ---------- */
+const hT=(rows,head)=>`<div class="tblwrap"><table class="hlptbl"><thead><tr>${head.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr>${r.map((c,i)=>`<td${typeof c==='number'?' class="n"':''}>${typeof c==='number'?fmtN(c):c}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+function helpSections(){
+  const gn=g=>GOODS[g].n.toLowerCase(),rec=k=>{const r=RECIPE[k];return (r.in?Object.entries(r.in).map(([g,q])=>`${q} ${gn(g)}`).join(' + ')+' → ':'')+Object.entries(r.out).map(([g,q])=>`${q} ${gn(g)}`).join(', ')+' / hó'};
+  const multiTxt=typeof mpOpen==='function'
+    ?`<ol><li>Városháza → <b>Beállítás</b> fül → Többjátékos → <b>Meghívó megjelenítése</b>. Megjelenik egy QR-kód és egy link.</li><li>A társad beolvassa a QR-kódot, vagy megnyitja a linket. Fiók nem kell hozzá.</li><li>A játék magától összeköt titeket. Akár négyen is lehettek: mindenki egy gépi szomszéd helyére lép.</li></ol><p>Egyszerre kell játszanotok, mert közvetlen a kapcsolat. Ha valaki kilép, a helyére visszaáll a gépi szomszéd, és amikor visszajön, magától újra összeköttek.</p>`
+    :`<ol><li>Oszd meg a játékot a társaddal a Megosztás menüben, <b>szerkesztőként</b>.</li><li>Mindketten: Városháza → <b>Beállítás</b> fül → Többjátékos → írjátok be ugyanazt a <b>szobakódot</b>.</li><li>Akár négyen is lehettek: mindenki egy gépi szomszéd helyére lép.</li></ol>`;
+  return [
+  {id:'start',t:'Első lépések',h:`<p>A célod egy élhető, nyereséges város. A lakók maguktól költöznek be, ha megadod nekik, ami kell: utat, áramot, vizet, munkát és egy kellemes környéket.</p>
+   <ol><li><b>Út.</b> Minden övezetnek legfeljebb 3 mezőre kell lennie egy úttól, különben nem épül be.</li>
+   <li><b>Övezetek.</b> Válaszd a Lakó, Kereskedelmi vagy Ipari eszközt, és húzással jelölj ki egy területet az út mellett. A házakat a lakók maguk építik fel.</li>
+   <li><b>Áram.</b> Építs erőművet. Az utak és a villanyvezetékek továbbviszik az áramot az épületekhez.</li>
+   <li><b>Víz.</b> A 2. szinttől minden épületnek víz kell: vízmű és föld alatti vízcső, ami 2 mezőn belül ellátja a házakat.</li>
+   <li><b>Figyeld a felső sávot.</b> Az áram, a víz, a szennyvíz és a szemét egyenlege zöld, ha van tartalék, és piros, ha hiány van.</li>
+   <li><b>Kereslet.</b> A Városháza → Város fülön az L, K, I sávok mutatják, mit akarnak a lakók. Ami felfelé áll, abból jelölj ki többet.</li>
+   <li><b>Pénz.</b> A bevétel az adóból jön. Ha fogy a pénz, emeld kicsit az adót, vagy vegyél fel hitelt (Pénzügy fül).</li></ol>
+   <div class="tip">Alul jobbra állíthatod az idő sebességét (II = szünet). A <b>Hibák</b> gomb a gondban lévő épületekhez ugrik. Az első küldetésed a Város fülön van.</div>`},
+  {id:'controls',t:'Kezelés',h:`<ul><li><b>Építés:</b> válassz eszközt alul, aztán kattints, vagy húzz a térképen. Az övezetek és a bontás téglalapot jelöl ki, az út, a vezeték és a cső vonalat húz.</li>
+   <li><b>Infó eszköz:</b> rákattintasz egy mezőre, és megmutatja az adatait: áram, víz, telekérték, szint, fejlesztés, újjáépítés.</li>
+   <li><b>Mozgatás:</b> Infó eszközzel húzás, vagy jobb egérgomb. Nagyítás: görgő, telefonon két ujj.</li>
+   <li><b>Sebesség:</b> II (szünet), 1× … 5×. Szóközzel is szüneteltethetsz.</li>
+   <li><b>Középre:</b> visszaállítja a térképet. <b>Hibák:</b> sorban végigmegy az áram, víz vagy út nélküli épületeken és a romokon.</li>
+   <li><b>Térképnézetek</b> (Város fül alja): áram, víz (föld alatt), szennyezés, telekérték, bűnözés, elégedettség, forgalom, szolgáltatások lefedettsége.</li>
+   <li>A <b>?</b> jelek a panelekben az Útmutató megfelelő részét nyitják meg.</li></ul>`},
+  {id:'zones',t:'Övezetek, szintek, kereslet',h:`<p><b>Lakó (L)</b>: itt laknak az emberek, ők fizetik a legtöbb adót. <b>Kereskedelmi (K)</b> és <b>Ipari (I)</b>: munkahelyek. Az ipar sok munkát ad, de szennyez, ezért tedd távolabb a lakóktól.</p>
+   <h4>Mitől nő egy épület?</h4><ul><li>Van út 3 mezőn belül, és van áram.</li><li>Van rá kereslet (az L, K, I sáv felfelé áll).</li><li>A <b>2. szinthez</b> víz kell. A szint a <b>telekértéktől</b> függ: park, iskola, kórház, víz közelsége emeli, a szennyezés, a bűnözés és a dugó csökkenti.</li></ul>
+   <h4>Elégedettség</h4><p>Az adó, a munkanélküliség, a szennyezés, a bűnözés, a szemét, a dugók és a hiányzó szolgáltatások rontják. Ha egy környéken 30% alá esik, a lakók elköltöznek.</p>
+   <h4>Munka és ingázás</h4><p>Ha több a lakó, mint a munkahely, munkanélküliség lesz. Ha van út egy szomszéd város felé, a munkanélküliek átjárnak oda dolgozni (Város fül: Ingázók).</p>`},
+  {id:'utils',t:'Közművek: áram, víz, szennyvíz, szemét',h:`<h4>Áram</h4><p>Erőművek termelik. Az utak, a villanyvezetékek és az egymás melletti épületek továbbadják. Ha kevés, egyes épületek áram nélkül maradnak (⚡ ikon). Éjszaka a napelem nem termel, télen kevesebbet.</p>
+   <h4>Víz</h4><p>A vízmű termeli (víz mellett többet). A föld alatti <b>vízcső</b> 2 mezős körben ellátja az épületeket. A <b>víztorony</b> tárolja a felesleget: hiánykor innen pótol, és a szomszédnak csak a tárolt vízből tudsz eladni.</p>
+   <h4>Szennyvíz</h4><p>Amelyik épület vizet kap, szennyvizet is termel. A <b>szennyvíztisztító</b>nak a vízhálózaton kell lennie, különben a kezeletlen szennyvíz szennyez.</p>
+   <h4>Szemét</h4><p>A <b>hulladéklerakó</b> lassan megtelik. A <b>szemétégető</b> áramot is termel, de szennyez. Az <b>újrahasznosító</b> tiszta, de drága. Az égető és az újrahasznosító szabad kapacitása apasztja a lerakót.</p>
+   <div class="tip">A felső sávban minden közműnél a nagy szám a kapacitás mínusz az igény. Piros, ha hiány van. Alatta: kapacitás / igény.</div>`},
+  {id:'services',t:'Szolgáltatások és különleges épületek',h:`<p>A <b>rendőrség</b> a bűnözést csökkenti, a <b>tűzoltóság</b> megfékezi a tüzet, az <b>iskola</b> és a <b>kórház</b> telekértéket és elégedettséget ad, a <b>park</b> szebb környéket és kevesebb szennyezést. Mindegyik csak a saját körzetében hat. Építéskor egy kör mutatja, meddig ér el.</p>
+   <p><b>Különleges épületek</b> (emlékmű, városháza, stadion, vidámpark) a város rangjával nyílnak meg, és mindegyikből egy lehet.</p>`},
+  {id:'money',t:'Pénz: adók, hitel, csőd',h:`<ul><li><b>Bevétel:</b> lakó-, kereskedelmi és ipari adó (külön csúszkával), eladás a szomszédoknak, a lakóknak eladott kenyér és autó.</li>
+   <li><b>Kiadás:</b> minden épület és út havi fenntartása, rendeletek, kutatás, hiteltörlesztés, vásárlás a szomszédtól.</li>
+   <li><b>Hitel:</b> a Pénzügy fülön felvehetsz +10 000 Ft-ot, 60 hónapig ${LOAN.pay} Ft/hó törlesztéssel.</li>
+   <li><b>Kényszerhitel:</b> ha a kassza mínuszba menne, a bank magától ad hitelt, de drágábban (${LOAN.autoPay} Ft/hó). Egyszerre legfeljebb ${LOAN.max} hitel futhat.</li>
+   <li><b>Csőd:</b> ha elfogy a hitelkeret, és még mindig mínuszban vagy, vége a játéknak.</li></ul>
+   <div class="tip">A magas adó több pénzt hoz, de visszafogja a keresletet, a lakóadó pedig az elégedettséget is rontja. 8–10% körül kezdj.</div>`},
+  {id:'trade',t:'Szomszédok és kereskedelem',h:`<p>A térkép négy széle négy szomszéd város felé vezet. Amelyik szélig villanyvezetéket, vízcsövet vagy utat húzol, azzal a szomszéddal kereskedhetsz áramban, vízben, illetve szemétben és árukban.</p>
+   <ul><li><b>Módok</b> erőforrásonként (Pénzügy fül): Ki, Vesz, Elad, Automata. Automata módban hiánynál vesz, feleslegnél elad.</li>
+   <li><b>Szomszédonként</b> beállíthatod: „Veszünk tőle” és „Eladunk neki”.</li>
+   <li>Az árak és az igények <b>havonta változnak</b>, és néha események borítják fel a piacot (hőség, aszály, új erőmű a szomszédban).</li>
+   <li>Ha többen is kínálnak, a játék a legjobb árat választja. A játékos szomszédok elsőbbséget kapnak.</li>
+   <li><b>Kikötő</b> (víz mellé): megjelenik a <b>Folyami kereskedő</b>, aki csak árukkal kereskedik, de sokat vesz és jól fizet.</li></ul>`},
+  {id:'prod',t:'Gyártás, raktár, kézi kereskedés',h:`${hT([MILL,BAKERY,STEELW,PARTSF,CARF].map(k=>[KN[k],rec(k),TOOLS.find(t=>t.kind===k).cost,UPKEEP[k]]),['Gyár','Termelés (1. szint)','Ár (Ft)','Fenntartás (Ft/hó)'])}
+   <ul><li>A <b>kenyeret és az autót a lakók is megveszik</b>. Minél nagyobb a város, annál többet.</li>
+   <li>A kenyér gyors, de kis haszon. Az autó lassú és drága (Autóipar kutatás kell hozzá), de messze a legtöbbet hozza.</li>
+   <li>Ha hiányzik az alapanyag, a játék megveszi a szomszédtól, ha engeded.</li>
+   <li><b>Raktár:</b> több árut tárolhatsz. Raktár nélkül kevés fér el.</li>
+   <li><b>Raktároz mód:</b> semmit nem ad el és nem vesz magától. A Gyártás fül <b>kézi gombjaival</b> te döntöd el, mikor adsz el vagy veszel.</li>
+   <li>A kikötő 12 mezős körében a gyárak 25%-kal többet termelnek.</li></ul>`},
+  {id:'upgrade',t:'Épületek fejlesztése',h:`<p>A termelő épületek (erőművek, víz, szennyvíz, hulladék, gyárak, raktár, kikötő) az Infó eszközzel rákattintva fejleszthetők, egészen a <b>${MAXLVL}. szintig</b>.</p>
+   <ul><li>Szintenként <b>+${Math.round(LVLSTEP*100)}% teljesítmény</b>, a fenntartás csak +${Math.round(UPKSTEP*100)}%.</li><li>Az ár szintenként kb. 10%-kal nő. Az első fejlesztés az épület árának kb. harmada.</li>
+   <li>A <b>„Mind”</b> gomb az összes ugyanilyen épületet egy szinttel feljebb viszi.</li>
+   <li>Az első szintek olcsóbbak, mint új épületet emelni. A magas szint hosszú távú befektetés: kevesebb hely, kevesebb fenntartás és kevesebb szennyezés.</li></ul>`},
+  {id:'research',t:'Kutatás',h:`<p>A Kutatás fülön beállítod a havi kutatási keretet, és kiválasztod, mit fejlesszenek a tudósok. 1 Ft = 1 pont. Iskolával 25%-kal gyorsabb.</p>
+   ${hT(TECHS.map(t=>[t.name,t.cost,t.desc]),['Fejlesztés','Pont','Mit ad'])}`},
+  {id:'ords',t:'Rendeletek',h:`<p>A rendeletek havonta pénzbe kerülnek (a *-osak a lakossággal együtt drágulnak), és mindegyiknek van előnye és hátránya.</p>
+   ${hT(ORDS.map(o=>[o.n,'+ '+o.pro,'− '+o.con]),['Rendelet','Előny','Hátrány'])}`},
+  {id:'traffic',t:'Közlekedés',h:`<p>A lakások és munkahelyek autói a legközelebbi utakat terhelik. A zsúfolt út rontja a környék telekértékét és elégedettségét, és szennyez. A <b>Forgalom</b> térképnézetben zöldtől pirosig látod a terhelést.</p>
+   <ul><li><b>Több út</b> szétteríti a forgalmat.</li><li><b>Buszmegálló:</b> 5 mezős körben legfeljebb 45%-kal kevesebb autó.</li><li><b>Metró</b> (kutatás után): 8 mezős körben legfeljebb 70%-kal kevesebb.</li><li>Rendelet: <b>ingyenes tömegközlekedés</b>.</li></ul>`},
+  {id:'seasons',t:'Évszakok, nappal és éjszaka',h:`<p>Minden harmadik hónap éjszaka: a napelem nem termel, a közvilágítás több áramot fogyaszt. A dátum alatt látod, mi van most.</p>
+   ${hT([['Tél (dec–feb)','+20% áram (fűtés), napelem −40%, több tűz, lassabb közlekedés, a malom kevesebbet őröl, −1 elégedettség'],['Tavasz (márc–máj)','+1 elégedettség, de gyakoribb az árvíz'],['Nyár (jún–aug)','+25% víz, több napelemáram, sokkal több tűz, turisták (üzleti kereslet)'],['Ősz (szept–nov)','aratás: a malom +25%']],['Évszak','Hatás'])}`},
+  {id:'disasters',t:'Katasztrófák és romok',h:`<p>Tűz, árvíz, tornádó és földrengés. A Beállítás fülön ki is kapcsolhatod őket, vagy kipróbálásra azonnal elindíthatsz egyet.</p>
+   <ul><li>A tűzoltóság a saját körzetében megfékezi a tüzet. Füstérzékelő-rendelettel ritkább a tűz.</li>
+   <li>A lerombolt épület helyén <b>romok</b> maradnak, felirattal arról, mi állt ott. Az Infó eszközzel <b>Újjáépítés</b> gombbal visszaépítheted. A leégett övezet magától újra beépül.</li></ul>`},
+  {id:'advisors',t:'Tanácsadók, küldetések, grafikonok',h:`<ul><li><b>Tanácsadók</b> (Tanácsadók fül): öt szakértő mondja el, hol van gond. Zöld = rendben, sárga = figyelj, piros = baj.</li>
+   <li><b>Küldetések</b> (Város fül teteje): sorban jönnek, pénzjutalommal.</li>
+   <li><b>Grafikonok</b>: a játék havonta rögzíti az adatokat. Egy sorra kattintva nagy grafikon nyílik, időszakválasztóval.</li>
+   <li><b>Ranglista</b> (Város fül): multiban a játékostársak városai is látszanak.</li></ul>`},
+  {id:'multi',t:'Többjátékos',h:multiTxt+`<p>A játékostárs városa a szomszéd lesz: neki adod el a felesleget, tőle veszed, ami hiányzik, közös áron. A munkanélkülijeid nála is dolgozhatnak, ha van út a térkép széléig.</p>`},
+  {id:'buildings',t:'Épületek listája',h:`<p>Minden építhető dolog árral, fenntartással és építési idővel. A fenntartás havonta jön le, az építési idő alatt az épület még nem működik.</p>
+   ${hT(TOOLS.filter(t=>t.cost).map(t=>[`<b>${t.name}</b><br><span style="color:var(--muted)">${t.g}</span>`,t.cost,t.kind?fmtN(UPKEEP[t.kind]||0):'–',t.kind&&BUILD[t.kind]?`${BUILD[t.kind]} hó`:'azonnal',t.hint]),['Épület','Ár','Fenntartás','Építés','Leírás'])}`}];}
+let HELPSEC=null,helpPrevSpeed=0;
+function openHelp(id){HELPSEC=helpSections();const toc=$('hlpToc'),main=$('hlpMain');
+  toc.innerHTML=HELPSEC.map(s=>`<button data-h="${s.id}">${s.t}</button>`).join('');
+  main.innerHTML=HELPSEC.map(s=>`<section id="hlp-${s.id}"><h3>${s.t}</h3>${s.h}</section>`).join('');
+  if($('helpModal').hidden){helpPrevSpeed=S.speed;setSpeed(0)}$('helpModal').hidden=false;showHelp(id||'start')}
+function showHelp(id){const el=$('hlp-'+id);if(el)$('hlpMain').scrollTop=el.offsetTop-$('hlpMain').offsetTop;
+  document.querySelectorAll('#hlpToc button').forEach(b=>b.setAttribute('aria-current',b.dataset.h===id?'true':'false'));
+  const cb=document.querySelector('#hlpToc button[aria-current="true"]');if(cb){const toc=$('hlpToc');toc.scrollLeft=cb.offsetLeft-toc.clientWidth/2+cb.offsetWidth/2;if(toc.scrollHeight>toc.clientHeight+4)toc.scrollTop=cb.offsetTop-toc.clientHeight/2}}
+function closeHelp(){if($('helpModal').hidden)return;$('helpModal').hidden=true;if(helpPrevSpeed)setSpeed(helpPrevSpeed);helpPrevSpeed=0;try{localStorage.setItem('varosalapito-help-seen','1')}catch(e){}}
+$('helpBtn').onclick=()=>openHelp('start');
+$('hlpClose').onclick=closeHelp;
+$('helpModal').addEventListener('click',e=>{if(e.target.id==='helpModal')closeHelp()});
+$('hlpToc').addEventListener('click',e=>{const b=e.target.closest('button[data-h]');if(b)showHelp(b.dataset.h)});
+$('hlpMain').addEventListener('scroll',()=>{if(!HELPSEC)return;const m=$('hlpMain'),top=m.scrollTop+m.offsetTop+20;let cur=HELPSEC[0].id;for(const s of HELPSEC){const el=$('hlp-'+s.id);if(el&&el.offsetTop<=top)cur=s.id}
+  document.querySelectorAll('#hlpToc button').forEach(b=>b.setAttribute('aria-current',b.dataset.h===cur?'true':'false'))});
+// "?" a panelek címsoraiban
+{const MAPH={'Küldetés':'start','Ranglista':'advisors','Kereslet':'zones','Közművek':'utils','Térképnézet':'controls','Költségvetés (előző hónap)':'money','Adókulcsok':'money','Bank':'money','Szomszédok':'trade','Szomszédonként':'trade','Rendeletek':'ords','Grafikonok':'advisors','Tanácsadók':'advisors','Gyártás':'prod','Kutatás':'research','Fejlesztések':'research','Többjátékos':'multi','Katasztrófák':'disasters'};
+  document.querySelectorAll('#panel h2').forEach(h=>{const id=MAPH[h.textContent.trim()];if(!id)return;const b=document.createElement('button');b.className='hq';b.type='button';b.textContent='?';b.title='Mi ez? Útmutató';b.setAttribute('aria-label','Útmutató: '+h.textContent.trim());b.onclick=()=>openHelp(id);h.appendChild(b)})}
 $('chClose').onclick=closeChart;$('chartModal').addEventListener('click',e=>{if(e.target.id==='chartModal')closeChart()});
 window.addEventListener('resize',()=>{if($('chartModal').hidden===false)drawChart()});
 
@@ -1937,7 +2066,7 @@ function start(data){
   if(data&&data.kind){try{ok=load(data)}catch(e){ok=false;console.error(e)}}
   if(!ok){let raw=null;try{raw=localStorage.getItem(SAVEKEY);if(raw)ok=load(JSON.parse(raw))}
     catch(e){ok=false;console.error(e);try{localStorage.setItem(SAVEKEY+'-hibas',raw)}catch(_){};setTimeout(()=>pushMsg('A mentett várost nem sikerült betölteni, ezért új várost kezdtél. A régi mentést félretettem.','warn'),500)}}
-  if(!ok)newGame();
+  if(!ok){newGame();let seen=false;try{seen=!!localStorage.getItem('varosalapito-help-seen')}catch(e){}if(!seen)setTimeout(()=>openHelp('start'),400)}
   else pushMsg(`Üdv újra, ${S.name} polgármestere!`,'good');
   setHint();
   mpInit();
