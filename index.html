@@ -423,7 +423,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
       </section>
       <section data-tab="prod" hidden>
         <h2>Gyártás</h2>
-        <div class="note">Malom → liszt → pékség → kenyér: gyors, de kis haszon. Acélmű → acél → alkatrészgyár → alkatrész → autógyár → autó: lassú és drága, de egy autó sokat ér (kutatás kell hozzá). A kenyeret és az autót a lakók is megveszik, a többit eladhatod a szomszédoknak. Ehhez út kell a térkép széléig. Ha kevés az alapanyag, a játék megveszi a szomszédoktól, ha engeded.</div>
+        <div class="note">Búzafarm → búza → malom → liszt → pékség → kenyér: olcsó, de kis haszon (a búza évszakfüggő, ősszel érdemes raktározni). Acélmű → acél → alkatrészgyár → alkatrész → autógyár → autó: lassú és drága, de egy autó sokat ér (kutatás kell hozzá). A kenyeret és az autót a lakók is megveszik, a többit eladhatod a szomszédoknak. Ehhez út kell a térkép széléig. Ha kevés az alapanyag, a játék megveszi a szomszédoktól, ha engeded.</div>
         <div id="prodSum"></div>
       </section>
       <section data-tab="prod" hidden>
@@ -573,14 +573,14 @@ const lfSize=()=>has('recyc2')?Math.round(LF_SIZE*1.5):LF_SIZE;
 const gcapOf=k=>k===RECYC&&has('recyc2')?120:GCAP[k];
 const radOf=k=>{const b=RAD[k];if(!b)return 0;if(k===POLICE&&has('patrol'))return b+4;if(k===FIRE&&has('firetruck'))return b+4;if(k===HOSP&&has('ambulance'))return b+4;return b};
 const SEASONS={
-  winter:{n:'tél',pow:1.2,wat:0.9,solar:0.6,wind:1.1,fire:1.2,traffic:1.08,mill:0.8,sat:-1,demC:0,flood:0.5},
-  spring:{n:'tavasz',pow:1,wat:1,solar:1,wind:1.05,fire:0.9,traffic:1,mill:1,sat:1,demC:0,flood:3},
-  summer:{n:'nyár',pow:1.05,wat:1.25,solar:1.2,wind:0.9,fire:1.5,traffic:1.03,mill:1.2,sat:1,demC:0.04,flood:1},
-  autumn:{n:'ősz',pow:1.05,wat:1,solar:0.85,wind:1.1,fire:1,traffic:1,mill:1.25,sat:0,demC:0,flood:1}};
-const SEASONMSG={winter:'Beköszöntött a tél: a fűtés miatt 20%-kal több áram kell, a napelemek kevesebbet termelnek, gyakoribb a tűz, lassabb a közlekedés, és a malmok is kevesebbet őrölnek.',
+  winter:{n:'tél',pow:1.2,wat:0.9,solar:0.6,wind:1.1,fire:1.2,traffic:1.08,mill:1,farm:0.2,sat:-1,demC:0,flood:0.5},
+  spring:{n:'tavasz',pow:1,wat:1,solar:1,wind:1.05,fire:0.9,traffic:1,mill:1,farm:0.8,sat:1,demC:0,flood:3},
+  summer:{n:'nyár',pow:1.05,wat:1.25,solar:1.2,wind:0.9,fire:1.5,traffic:1.03,mill:1,farm:1.3,sat:1,demC:0.04,flood:1},
+  autumn:{n:'ősz',pow:1.05,wat:1,solar:0.85,wind:1.1,fire:1,traffic:1,mill:1,farm:1.7,sat:0,demC:0,flood:1}};
+const SEASONMSG={winter:'Beköszöntött a tél: a fűtés miatt 20%-kal több áram kell, a napelemek kevesebbet termelnek, gyakoribb a tűz, lassabb a közlekedés, és a búzafarmokon alig terem valami.',
   spring:'Itt a tavasz: kellemesebb az idő (+1 elégedettség), de nő az árvíz esélye.',
   summer:'Nyár van: 25%-kal több víz fogy, a napelemek többet termelnek, a száraz időben gyakoribb a tűz, és jönnek a turisták.',
-  autumn:'Ősz van, aratás: a malmok 25%-kal többet őrölnek.'};
+  autumn:'Ősz van, aratás: a búzafarmok most teremnek a legtöbbet. Raktározd el a búzát télire!'};
 const seasonOf=m=>{const x=((m%12)+12)%12;return x===11||x<=1?'winter':x<=4?'spring':x<=7?'summer':'autumn'};
 const SE=()=>SEASONS[seasonOf(S?S.month:0)];
 const ORDS=[
@@ -616,16 +616,16 @@ const TOOLOV={bus:'traffic',metro:'traffic',pipe:'water',pump:'water',treat:'wat
 const BASEP={pow:{b:3.8,s:1.1,unit:'MW'},wat:{b:3,s:2,unit:'egység'},garb:{b:2.5,s:1.2,unit:'egység'}};
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const clampN=(v,a,b)=>{v=Number(v);return isFinite(v)?Math.max(a,Math.min(b,v)):a};
-const GOODS={flour:{n:'Liszt',b:2,s:1,cap0:200,capW:1500,rd:60,rs:80},bread:{n:'Kenyér',b:3,s:1.5,cap0:300,capW:2000,rd:60,rs:60},steel:{n:'Acél',b:10,s:6,cap0:150,capW:1200,rd:40,rs:50},parts:{n:'Alkatrész',b:18,s:13,cap0:150,capW:1200,rd:40,rs:40},cars:{n:'Autó',b:330,s:240,cap0:8,capW:60,rd:4,rs:2}};
+const GOODS={wheat:{n:'Búza',b:1.2,s:0.6,cap0:400,capW:2500,rd:80,rs:90},flour:{n:'Liszt',b:2.6,s:1.5,cap0:200,capW:1500,rd:60,rs:80},bread:{n:'Kenyér',b:3,s:1.5,cap0:300,capW:2000,rd:60,rs:60},steel:{n:'Acél',b:10,s:6,cap0:150,capW:1200,rd:40,rs:50},parts:{n:'Alkatrész',b:18,s:13,cap0:150,capW:1200,rd:40,rs:40},cars:{n:'Autó',b:330,s:240,cap0:8,capW:60,rd:4,rs:2}};
 const goodsCap=g=>GOODS[g].cap0+(T.whN||0)*GOODS[g].capW;
 const GKEYS=Object.keys(GOODS);
 for(const g of GKEYS)BASEP[g]={b:GOODS[g].b,s:GOODS[g].s,unit:'db'};
-const MILL=26,BAKERY=27,STEELW=28,PARTSF=29,CARF=30;
-Object.assign(KN,{26:'Malom',27:'Pékség',28:'Acélmű',29:'Alkatrészgyár',30:'Autógyár'});
-Object.assign(UPKEEP,{26:25,27:40,28:60,29:60,30:150});Object.assign(BUILD,{26:3,27:2,28:6,29:5,30:10});Object.assign(SJOB,{26:10,27:15,28:40,29:35,30:80});
-const RECIPE={26:{out:{flour:40}},27:{in:{flour:20},out:{bread:60}},28:{out:{steel:24}},29:{in:{steel:12},out:{parts:24}},30:{in:{steel:6,parts:12},out:{cars:2}}};
-const FPOW={26:4,27:4,28:10,29:8,30:12},FWAT={26:2,27:3,28:5,29:3,30:5},FPOL={26:1,27:1,28:22,29:6,30:8};
-const isFactory=k=>k>=26&&k<=30;
+const MILL=26,BAKERY=27,STEELW=28,PARTSF=29,CARF=30,FARM=35;
+Object.assign(KN,{35:'Búzafarm',26:'Malom',27:'Pékség',28:'Acélmű',29:'Alkatrészgyár',30:'Autógyár'});
+Object.assign(UPKEEP,{35:10,26:15,27:40,28:60,29:60,30:150});Object.assign(BUILD,{35:2,26:3,27:2,28:6,29:5,30:10});Object.assign(SJOB,{35:6,26:10,27:15,28:40,29:35,30:80});
+const RECIPE={35:{out:{wheat:60}},26:{in:{wheat:40},out:{flour:40}},27:{in:{flour:20},out:{bread:60}},28:{out:{steel:24}},29:{in:{steel:12},out:{parts:24}},30:{in:{steel:6,parts:12},out:{cars:2}}};
+const FPOW={35:0,26:4,27:4,28:10,29:8,30:12},FWAT={35:0,26:2,27:3,28:5,29:3,30:5},FPOL={35:0,26:1,27:1,28:22,29:6,30:8};
+const isFactory=k=>(k>=26&&k<=30)||k===35;
 const WAREHOUSE=31,BUS=32,METRO=33,PORT=34;
 Object.assign(KN,{34:'Kikötő'});Object.assign(UPKEEP,{34:60});Object.assign(BUILD,{34:6});Object.assign(SJOB,{34:40});RAD[34]=12;
 Object.assign(KN,{31:'Raktár',32:'Buszmegálló',33:'Metróállomás'});Object.assign(UPKEEP,{31:20,32:12,33:70});Object.assign(BUILD,{31:3,32:1,33:8});Object.assign(SJOB,{31:8,32:3,33:20});
@@ -659,12 +659,13 @@ const TOOLS=[
   {id:'landfill',g:'Hulladék',name:'Hulladéklerakó',cost:400,kind:LANDFILL,mode:'single',sw:'#8a7a5a',hint:'Havonta 80 egység szemetet fogad, összesen 3000 egységnyi hely van benne. Ha megtelik, nem fogad többet, és a szomszéd szemetét is csak szabad hely esetén veheted át. A szemétégető és az újrahasznosító szabad kapacitása lassan apasztja. Út kell hozzá. Fenntartás 10 Ft/hó.'},
   {id:'incin',g:'Hulladék',name:'Szemétégető',cost:2500,kind:INCIN,mode:'single',sw:'#7d5a4a',hint:'Havi 150 egység szemetet éget el, és közben 40 MW áramot termel, de erősen szennyez. Út kell hozzá. Fenntartás 35 Ft/hó.'},
   {id:'recyc',g:'Hulladék',name:'Újrahasznosító',cost:1800,kind:RECYC,mode:'single',sw:'#4f9a8a',hint:'Havi 60 egység szemetet dolgoz fel szinte szennyezés nélkül. Út és áram kell hozzá. Fenntartás 40 Ft/hó.'},
-  {id:'mill',g:'Gyártás',name:'Malom',cost:1200,kind:MILL,mode:'single',sw:'#c9a46a',hint:'Havonta 40 liszt. Áram és út kell hozzá. 10 munkahely, fenntartás 25 Ft/hó.'},
+  {id:'farm',g:'Gyártás',name:'Búzafarm',cost:700,kind:FARM,mode:'single',sw:'#d9b64a',hint:'Átlagosan havi 60 búza, de évszakfüggő: ősszel sok, télen szinte semmi. Csak út kell hozzá, áram nem. A szennyezés (pl. acélmű, szénerőmű közelében) rontja a termést. 6 munkahely, fenntartás 10 Ft/hó.'},
+  {id:'mill',g:'Gyártás',name:'Malom',cost:1200,kind:MILL,mode:'single',sw:'#c9a46a',hint:'40 búzából havonta 40 liszt. Áram és út kell hozzá. Ha nincs elég saját búza, a szomszédtól veszi. 10 munkahely, fenntartás 15 Ft/hó.'},
   {id:'bakery',g:'Gyártás',name:'Pékség',cost:1500,kind:BAKERY,mode:'single',sw:'#e0a050',hint:'20 lisztből havonta 60 kenyér. A lakók megveszik, a maradékot eladhatod. 15 munkahely, fenntartás 40 Ft/hó.'},
   {id:'steel',g:'Gyártás',name:'Acélmű',cost:6000,kind:STEELW,mode:'single',sw:'#5d6670',hint:'Havonta 24 acél. Erősen szennyez. 40 munkahely, fenntartás 60 Ft/hó.'},
   {id:'parts',g:'Gyártás',name:'Alkatrészgyár',cost:5000,kind:PARTSF,mode:'single',sw:'#6f8fb0',tech:'autoipar',hint:'Kutatás után építhető. 12 acélból havonta 24 alkatrész. 35 munkahely, fenntartás 60 Ft/hó.'},
   {id:'carf',g:'Gyártás',name:'Autógyár',cost:15000,kind:CARF,mode:'single',sw:'#c04848',tech:'autoipar',hint:'Kutatás után építhető. 6 acél + 12 alkatrész → havonta 2 autó, darabja kb. 240 Ft. 80 munkahely, fenntartás 150 Ft/hó.'},
-  {id:'warehouse',g:'Gyártás',name:'Raktár',cost:2000,kind:WAREHOUSE,mode:'single',sw:'#a08a6a',hint:'Több árut tárolhatsz: +1500 liszt, +2000 kenyér, +1200 acél és alkatrész, +60 autó. Út kell hozzá. Fenntartás 20 Ft/hó.'},
+  {id:'warehouse',g:'Gyártás',name:'Raktár',cost:2000,kind:WAREHOUSE,mode:'single',sw:'#a08a6a',hint:'Több árut tárolhatsz: +2500 búza, +1500 liszt, +2000 kenyér, +1200 acél és alkatrész, +60 autó. Út kell hozzá. Fenntartás 20 Ft/hó.'},
   {id:'port',g:'Gyártás',name:'Kikötő',cost:6000,kind:PORT,mode:'single',sw:'#3a6f8f',hint:'Csak közvetlenül víz mellé építhető. 12 mezős körben a gyárak és az ipar 25%-kal többet termelnek, és megjelenik a Folyami kereskedő, aki sokat vesz és jól fizet az árukért. Áram és út kell hozzá. Fenntartás 60 Ft/hó.'},
   {id:'police',g:'Szolgáltatás',name:'Rendőrség',cost:500,kind:POLICE,mode:'single',sw:'#3b5ba8',hint:'Csökkenti a bűnözést 9 mezős körben. Fenntartás 35 Ft/hó.'},
   {id:'fire',g:'Szolgáltatás',name:'Tűzoltóság',cost:500,kind:FIRE,mode:'single',sw:'#c23b30',hint:'Megfékezi a tüzeket 9 mezős körben. Fenntartás 35 Ft/hó.'},
@@ -1041,7 +1042,7 @@ const DIRS=['n','e','s','w'],ALLD=['n','e','s','w','p'];
 const DIRNAME={n:'Északi',e:'Keleti',s:'Déli',w:'Nyugati',p:'Folyami'};
 const ROBOTNAME={n:'Hegyesd',e:'Tóvár',s:'Kisberek',w:'Szélfalva',p:'Folyami kereskedő'};
 const RKEYS=['pow','wat','garb',...GKEYS];
-const RNAME={pow:'Áram',wat:'Víz',garb:'Szemét',flour:'Liszt',bread:'Kenyér',steel:'Acél',parts:'Alkatrész',cars:'Autó'};
+const RNAME={pow:'Áram',wat:'Víz',garb:'Szemét',wheat:'Búza',flour:'Liszt',bread:'Kenyér',steel:'Acél',parts:'Alkatrész',cars:'Autó'};
 const RSCALE={pow:[50,90],wat:[70,90],garb:[30,80]};for(const g of GKEYS)RSCALE[g]=[GOODS[g].rd,GOODS[g].rs];
 function newMk(){return{m:1,dem:0,sup:0,hist:[1],ev:1,evLeft:0,f:+(0.5+Math.random()*0.9).toFixed(2)}}
 function fixNb(){S.nb=S.nb&&typeof S.nb==='object'?S.nb:{};
@@ -1132,18 +1133,21 @@ const fmtP=v=>{const r=Math.round((+v||0)*10),a=Math.abs(r);return (r<0?'-':'')+
 /* ---------- gyártás ---------- */
 const DOMP={bread:2.4,cars:250};
 const domDemand=g=>g==='bread'?Math.round(T.pop*0.04):g==='cars'?Math.floor(T.pop*0.0015):0;
-function factoryState(i){if(S.build[i])return 'épül';if(S.burn[i])return 'ég';if(!powered[i])return 'nincs áram';if(!access[i])return 'nincs út';return 'működik'}
+const farmPol=i=>Math.max(0.4,1-(pol[i]||0)/50);
+function factoryState(i){if(S.build[i])return 'épül';if(S.burn[i])return 'ég';if(!powered[i]&&S.kind[i]!==FARM)return 'nincs áram';if(!access[i])return 'nincs út';return 'működik'}
 function produceMonth(){
   resetTr(GKEYS);const rd=T.goodsDirs||T.roadDirs||[],G=S.goods,z=()=>Object.fromEntries(GKEYS.map(g=>[g,0]));
   const prod=z(),used=z(),bought=z(),sold=z(),dom=z(),short=z();
-  const cnt={},cntN={};for(let i=0;i<NN;i++){const k=S.kind[i];if(isFactory(k)&&factoryState(i)==='működik'){cnt[k]=(cnt[k]||0)+lvlMul(i)*(covPort[i]>0?1.25:1);cntN[k]=(cntN[k]||0)+1}}
+  const cnt={},cntN={};for(let i=0;i<NN;i++){const k=S.kind[i];if(isFactory(k)&&factoryState(i)==='működik'){cnt[k]=(cnt[k]||0)+lvlMul(i)*(covPort[i]>0?1.25:1)*(k===FARM?farmPol(i):1);cntN[k]=(cntN[k]||0)+1}}
   T.factories=cntN;
-  for(const k of [MILL,STEELW,BAKERY,PARTSF,CARF]){const n=cnt[k]||0;if(!n)continue;const rc=RECIPE[k];let ratio=1;
-    if(rc.in){for(const g in rc.in){const need=rc.in[g]*n;
+  for(const k of [FARM,MILL,STEELW,BAKERY,PARTSF,CARF]){const n=cnt[k]||0;if(!n)continue;const rc=RECIPE[k],sf=k===FARM?SE().farm:1;let ratio=1;
+    for(const g in rc.out){const q=rc.out[g]*n*sf;if(q>0)ratio=Math.min(ratio,Math.max(0,(goodsCap(g)-G[g])/q))}
+    if(rc.in){const cr=ratio;let ri=1;for(const g in rc.in){const need=rc.in[g]*n*cr;
         if(G[g]<need){const m=S.trade[g];if(m==='buy'||m==='auto'){const got=buyFrom(g,rd,need-G[g]);G[g]+=got;bought[g]+=got}}
-        if(G[g]<need)short[g]+=need-G[g];ratio=Math.min(ratio,need?G[g]/need:1)}
+        if(G[g]<need)short[g]+=need-G[g];if(need>0)ri=Math.min(ri,G[g]/need)}
+      ratio=cr*Math.min(1,ri);
       for(const g in rc.in){const u=Math.floor(rc.in[g]*n*ratio);G[g]-=u;used[g]+=u}}
-    for(const g in rc.out){const q=Math.floor(rc.out[g]*n*ratio*(k===MILL?SE().mill:1)),add=Math.max(0,Math.min(q,goodsCap(g)-G[g]));G[g]+=add;prod[g]+=add}}
+    for(const g in rc.out){const q=Math.floor(rc.out[g]*n*ratio*(k===FARM?SE().farm:1)),add=Math.max(0,Math.min(q,goodsCap(g)-G[g]));G[g]+=add;prod[g]+=add}}
   for(const g of ['bread','cars']){const d=Math.min(G[g],domDemand(g));G[g]-=d;dom[g]=d}
   const avail={};
   for(const g of GKEYS){const m=S.trade[g];let reserve=0;
@@ -1296,7 +1300,7 @@ const pal={
 const pick=(a,h)=>a[Math.floor(h*a.length)%a.length];
 function bHeight(i){const k=S.kind[i],d=S.dens[i];
   if(k===RZ)return [0,16,26,56][d];if(k===CZ)return [0,13,34,74][d];if(k===IZ)return [0,11,17,22][d];
-  return {34:14,31:16,32:8,33:12,26:30,27:14,28:24,29:16,30:20,24:5,25:46,23:40,6:22,7:52,8:17,9:17,10:15,11:29,14:24,15:10,16:6,17:20,18:14,19:20,20:32,21:12,22:48}[k]||0}
+  return {35:12,34:14,31:16,32:8,33:12,26:30,27:14,28:24,29:16,30:20,24:5,25:46,23:40,6:22,7:52,8:17,9:17,10:15,11:29,14:24,15:10,16:6,17:20,18:14,19:20,20:32,21:12,22:48}[k]||0}
 
 function drawGround(x,y,cx,cy,t){
   const i=y*N+x,k=S.kind[i],ter=S.terrain[i];
@@ -1318,6 +1322,9 @@ function drawGround(x,y,cx,cy,t){
     else{ctx.fillStyle=k===RZ?'#8fb36d':k===CZ?'#b9b4aa':'#a39783';dia(cx,cy,.94);ctx.fill();
       ctx.strokeStyle=ZCOL[k]+'aa';ctx.lineWidth=1;ctx.stroke()}
   } else if(k===PARK){ctx.fillStyle='#5a9a45';dia(cx,cy,.96);ctx.fill();ctx.fillStyle='#d8c9a0';quad(cx,cy,-.08,.08,-.48,.48);ctx.fill();quad(cx,cy,-.48,.48,-.08,.08);ctx.fill()}
+  else if(k===FARM){const se=seasonOf(S.month),fc={spring:['#86b34e','#62903a'],summer:['#d9b64a','#b8922e'],autumn:['#c99a4a','#93702f'],winter:['#a08a6c','#7c674d']}[se]||['#86b34e','#62903a'];
+    ctx.fillStyle=fc[0];dia(cx,cy,.96);ctx.fill();ctx.strokeStyle=fc[1];ctx.lineWidth=1.3;ctx.beginPath();
+    for(let v=-0.4;v<=0.41;v+=0.1){const a=P(cx,cy,-0.46,v),b=P(cx,cy,0.46,v);ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1])}ctx.stroke()}
   else if(k===RUBBLE){ctx.fillStyle='#857c72';dia(cx,cy,.9);ctx.fill();ctx.fillStyle='#5f5850';for(let n=0;n<6;n++){const h=hash(x*7+n,y,3);ctx.fillRect(cx-14+h*28,cy-6+((h*97)%1)*12,3,2)}}
   else if(isFacility(k)){ctx.fillStyle=({6:'#8a857d',15:'#a7ab9f',16:'#8c7d5e',19:'#8fb36d',20:'#d6cfbf',21:'#9cc07a',22:'#9cc07a'})[k]||'#bdb8ae';dia(cx,cy,.94);ctx.fill()}
 }
@@ -1415,6 +1422,8 @@ function drawObject(x,y,cx,cy,t){
     ctx.fillStyle='#98a3ab';ctx.beginPath();ctx.moveTo(tx,ty);ctx.quadraticCurveTo(tx+5,ty-22,tx+8,ty-40);ctx.lineTo(tx+8,ty-40);ctx.quadraticCurveTo(tx+5,ty-22,tx+12,ty);ctx.closePath();ctx.fill();
     ctx.fillStyle='#e3e8ec';ctx.beginPath();ctx.ellipse(tx,ty-40,8,3,0,0,7);ctx.fill();
     if(powered[i]||true)for(let q=0;q<4;q++){const p=(((t*0.25+q/4+h)%1)+1)%1;ctx.fillStyle=`rgba(245,245,245,${0.6*(1-p)})`;ctx.beginPath();ctx.arc(tx+p*8,ty-44-p*30,4+p*10,0,7);ctx.fill()}}
+  else if(k===FARM){box(cx-12,cy-6,.24,9,'#a8432f');roof(cx-12,cy-6,.24,9,5,'#6b3a2a');box(cx-2,cy-9,.1,16,'#cfd3d6');
+    ctx.fillStyle='#e3e6e8';ctx.beginPath();ctx.ellipse(cx-2,cy-25,3.2,2.2,0,Math.PI,2*Math.PI);ctx.fill()}
   else if(k===MILL){box(cx,cy+2,.46,20,'#e8dcc4');roof(cx,cy+2,.46,20,8,'#8a5a3a');const a0=(powered[i]?t*1.3:0)+h*6;
     ctx.strokeStyle='#5b4330';ctx.lineWidth=2;ctx.beginPath();for(let q=0;q<4;q++){const a=a0+q*Math.PI/2;ctx.moveTo(cx+5,cy-22);ctx.lineTo(cx+5+Math.cos(a)*17,cy-22+Math.sin(a)*17)}ctx.stroke();
     ctx.fillStyle='#f3ead8';for(let q=0;q<4;q++){const a=a0+q*Math.PI/2;ctx.save();ctx.translate(cx+5+Math.cos(a)*11,cy-22+Math.sin(a)*11);ctx.rotate(a);ctx.fillRect(-6,-2.2,12,4.4);ctx.restore()}}
@@ -1706,7 +1715,7 @@ function helpSections(){
    <li>Az árak és az igények <b>havonta változnak</b>, és néha események borítják fel a piacot (hőség, aszály, új erőmű a szomszédban).</li>
    <li>Ha többen is kínálnak, a játék a legjobb árat választja. A játékos szomszédok elsőbbséget kapnak.</li>
    <li><b>Kikötő</b> (víz mellé): megjelenik a <b>Folyami kereskedő</b>, aki csak árukkal kereskedik, de sokat vesz és jól fizet.</li></ul>`},
-  {id:'prod',t:'Gyártás, raktár, kézi kereskedés',h:`${hT([MILL,BAKERY,STEELW,PARTSF,CARF].map(k=>[KN[k],rec(k),TOOLS.find(t=>t.kind===k).cost,UPKEEP[k]]),['Gyár','Termelés (1. szint)','Ár (Ft)','Fenntartás (Ft/hó)'])}
+  {id:'prod',t:'Gyártás, raktár, kézi kereskedés',h:`${hT([FARM,MILL,BAKERY,STEELW,PARTSF,CARF].map(k=>[KN[k],rec(k),TOOLS.find(t=>t.kind===k).cost,UPKEEP[k]]),['Gyár','Termelés (1. szint)','Ár (Ft)','Fenntartás (Ft/hó)'])}
    <ul><li>A <b>kenyeret és az autót a lakók is megveszik</b>. Minél nagyobb a város, annál többet.</li>
    <li>A kenyér gyors, de kis haszon. Az autó lassú és drága (Autóipar kutatás kell hozzá), de messze a legtöbbet hozza.</li>
    <li>Ha hiányzik az alapanyag, a játék megveszi a szomszédtól, ha engeded.</li>
@@ -1724,7 +1733,7 @@ function helpSections(){
   {id:'traffic',t:'Közlekedés',h:`<p>A lakások és munkahelyek autói a legközelebbi utakat terhelik. A zsúfolt út rontja a környék telekértékét és elégedettségét, és szennyez. A <b>Forgalom</b> térképnézetben zöldtől pirosig látod a terhelést.</p>
    <ul><li><b>Több út</b> szétteríti a forgalmat.</li><li><b>Buszmegálló:</b> 5 mezős körben legfeljebb 45%-kal kevesebb autó.</li><li><b>Metró</b> (kutatás után): 8 mezős körben legfeljebb 70%-kal kevesebb.</li><li>Rendelet: <b>ingyenes tömegközlekedés</b>.</li></ul>`},
   {id:'seasons',t:'Évszakok, nappal és éjszaka',h:`<p>Minden harmadik hónap éjszaka: a napelem nem termel, a közvilágítás több áramot fogyaszt. A dátum alatt látod, mi van most.</p>
-   ${hT([['Tél (dec–feb)','+20% áram (fűtés), napelem −40%, több tűz, lassabb közlekedés, a malom kevesebbet őröl, −1 elégedettség'],['Tavasz (márc–máj)','+1 elégedettség, de gyakoribb az árvíz'],['Nyár (jún–aug)','+25% víz, több napelemáram, sokkal több tűz, turisták (üzleti kereslet)'],['Ősz (szept–nov)','aratás: a malom +25%']],['Évszak','Hatás'])}`},
+   ${hT([['Tél (dec–feb)','+20% áram (fűtés), napelem −40%, több tűz, lassabb közlekedés, a búzafarm alig terem (20%), −1 elégedettség'],['Tavasz (márc–máj)','+1 elégedettség, de gyakoribb az árvíz; a búza 80%-ot terem'],['Nyár (jún–aug)','+25% víz, több napelemáram, sokkal több tűz, turisták (üzleti kereslet), búza 130%'],['Ősz (szept–nov)','aratás: a búzafarm 170%-ot terem']],['Évszak','Hatás'])}`},
   {id:'disasters',t:'Katasztrófák és romok',h:`<p>Tűz, árvíz, tornádó és földrengés. A Beállítás fülön ki is kapcsolhatod őket, vagy kipróbálásra azonnal elindíthatsz egyet.</p>
    <ul><li>A tűzoltóság a saját körzetében megfékezi a tüzet. Füstérzékelő-rendelettel ritkább a tűz.</li>
    <li>A lerombolt épület helyén <b>romok</b> maradnak, felirattal arról, mi állt ott. Az Infó eszközzel <b>Újjáépítés</b> gombbal visszaépítheted. A leégett övezet magától újra beépül.</li></ul>`},
@@ -1782,7 +1791,7 @@ function renderGoods(){const el=$('goodsList');if(!el)return;const gd=T.gd||{};
       `<div class="mtr"><button data-mt="sell" data-g="${g}" data-q="10">Elad 10</button><button data-mt="sell" data-g="${g}" data-q="100">Elad 100</button><button data-mt="sell" data-g="${g}" data-q="all">Mindet</button><button data-mt="buy" data-g="${g}" data-q="10">Vesz 10</button><button data-mt="buy" data-g="${g}" data-q="100">Vesz 100</button></div>`+
       `<div class="seg">${segs}</div></li>`}).join('');
   const L=S.lastGoods||{dom:0,exp:0,imp:0,up:0},net=L.dom+L.exp-L.imp-L.up,cnt=T.factories||{},MM=S.manMonth||{inc:0,exp:0};
-  const fac=[MILL,BAKERY,STEELW,PARTSF,CARF].map(k=>{let all=0;for(let i=0;i<NN;i++)if(S.kind[i]===k)all++;return all?`${KN[k]} ${cnt[k]||0}/${all}`:''}).filter(Boolean).join(' · ');
+  const fac=[FARM,MILL,BAKERY,STEELW,PARTSF,CARF].map(k=>{let all=0;for(let i=0;i<NN;i++)if(S.kind[i]===k)all++;return all?`${KN[k]} ${cnt[k]||0}/${all}`:''}).filter(Boolean).join(' · ');
   $('prodSum').innerHTML=`<div class="row"><span>Lakóknak eladva</span><span class="v">+${fmtN(L.dom)} Ft</span></div><div class="row"><span>Szomszédnak eladva</span><span class="v">+${fmtN(L.exp)} Ft</span></div><div class="row"><span>Alapanyag-vásárlás</span><span class="v">−${fmtN(L.imp)} Ft</span></div><div class="row"><span>Gyárak fenntartása</span><span class="v">−${fmtN(L.up)} Ft</span></div><div class="row"><span><b>Gyártás haszna (előző hónap)</b></span><span class="v" style="color:${net<0?'var(--danger)':'var(--ok)'}">${net>=0?'+':'−'}${fmtN(Math.abs(net))} Ft</span></div><div class="row"><span>Kézi kereskedés ebben a hónapban</span><span class="v">+${fmtN(MM.inc)} / −${fmtN(MM.exp)} Ft</span></div><div class="note">${fac?'Működő gyárak: '+fac+'. ':'Még nincs gyárad. A Gyártás csoportban építhetsz. '}Raktárhely: ${T.whN||0} raktár. Raktároz módban semmit nem ad el és nem vesz magától, te döntesz a kézi gombokkal.</div>`}
 function boardRows(){const rows=[{me:true,name:S.name,pop:T.pop,money:S.money,sat:T.sat}];for(const d of DIRS)if(isPlayer(d)){const p=NBP[d];rows.push({pid:p.pid,dir:d,name:p.name,pop:p.pop,money:p.money,sat:p.sat})}return rows.sort((a,b)=>b.pop-a.pop)}
 function renderBoard(withDrop){const rows=boardRows();
@@ -1869,7 +1878,7 @@ function hud(){
   const bal=(id,cap,need,unit)=>{const b=Math.round(cap-need),e=$(id);e.textContent=(b>0?'+':b<0?'−':'±')+fmtN(Math.abs(b))+(unit?' '+unit:'');
     e.classList.toggle('neg',b<0);e.classList.toggle('pos',b>0);$(id+'D').textContent=`${fmtN(cap)} / ${fmtN(need)}`};
   bal('uPow',T.supply,T.need,'MW');bal('uWat',T.wSupply,T.wNeed,'');bal('uSew',T.treatCap||0,T.sewage,'');bal('uGarb',T.gCap+T.gExport,T.garbage,'');
-  {const SH={flour:'Liszt',bread:'Kenyér',steel:'Acél',parts:'Alkatr.',cars:'Autó'},items=GKEYS.filter(g=>(S.goods[g]||0)>0||(T.gd&&T.gd.prod&&T.gd.prod[g]>0));
+  {const SH={wheat:'Búza',flour:'Liszt',bread:'Kenyér',steel:'Acél',parts:'Alkatr.',cars:'Autó'},items=GKEYS.filter(g=>(S.goods[g]||0)>0||(T.gd&&T.gd.prod&&T.gd.prod[g]>0));
     const pct=g=>goodsCap(g)?S.goods[g]/goodsCap(g):0;
     $('uStock').innerHTML=items.length?items.map(g=>`<span class="${pct(g)>=1?'full':''}">${SH[g]} ${fmtN(S.goods[g]||0)}</span>`).join(' · '):'nincs áru';
     const full=items.filter(g=>pct(g)>=1);$('uStockD').textContent=full.length?`tele: ${full.map(g=>SH[g].toLowerCase()).join(', ')} · raktár kell`:(items.length?`raktár: ${fmtN(T.whN||0)} db`:'')}
@@ -1917,7 +1926,7 @@ function renderNews(){$('news').innerHTML=news.map(n=>`<li><b>${n.d}</b>${n.text
 
 let inspected=null;
 function meter(label,v,col){return `<div class="row"><span>${label}</span><span class="v">${Math.round(v)}</span></div><div class="meter"><i style="width:${Math.max(0,Math.min(100,v))}%;background:${col}"></i></div>`}
-const UPG=new Set([PORT,COAL,WIND,SOLAR,NUKE,PUMP,TREAT,TOWER,LANDFILL,INCIN,RECYC,MILL,BAKERY,STEELW,PARTSF,CARF,WAREHOUSE]);
+const UPG=new Set([PORT,COAL,WIND,SOLAR,NUKE,PUMP,TREAT,TOWER,LANDFILL,INCIN,RECYC,FARM,MILL,BAKERY,STEELW,PARTSF,CARF,WAREHOUSE]);
 function upgCost(k,L){const t=TOOLS.find(x=>x.kind===k);return Math.round((t?t.cost:1000)*0.35*Math.pow(1.10,L-1)/10)*10}
 function outText(i,L){const k=S.kind[i],m=1+LVLSTEP*(L-1),r=v=>fmtN(Math.round(v)),gn=g=>GOODS[g].n.toLowerCase();
   if(k===SOLAR)return `${r((has('solar2')?60:40)*m)} MW nappal`;
@@ -1928,7 +1937,7 @@ function outText(i,L){const k=S.kind[i],m=1+LVLSTEP*(L-1),r=v=>fmtN(Math.round(v
   if(k===TOWER)return `${r(towerCap()*m)} víz tárolás`;
   if(k===LANDFILL)return `${r(GCAP[k]*m)} szemét/hó, ${r(lfSize()*m)} hely`;
   if(k===RECYC)return `${r(gcapOf(k)*m)} szemét/hó`;
-  if(isFactory(k)){const rc=RECIPE[k];return Object.entries(rc.out).map(([g,q])=>`${r(q*m)} ${gn(g)}`).join(', ')+'/hó'+(rc.in?` (kell: ${Object.entries(rc.in).map(([g,q])=>`${r(q*m)} ${gn(g)}`).join(' + ')})`:'')}
+  if(isFactory(k)){const rc=RECIPE[k];return Object.entries(rc.out).map(([g,q])=>`${r(q*m)} ${gn(g)}`).join(', ')+'/hó'+(k===FARM?` átlag (most ${Math.round(SE().farm*100)}%${pol[i]>2?`, szennyezés miatt ${Math.round(farmPol(i)*100)}%`:''})`:'')+(rc.in?` (kell: ${Object.entries(rc.in).map(([g,q])=>`${r(q*m)} ${gn(g)}`).join(' + ')})`:'')}
   if(k===WAREHOUSE)return `+${r(GOODS.bread.capW*m)} kenyér, +${r(GOODS.cars.capW*m)} autó hely`;
   if(k===PORT)return `folyami kereskedő forgalma ${r(100*m)}%`;
   return ''}
