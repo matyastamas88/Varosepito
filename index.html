@@ -219,6 +219,20 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 .nbt button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 .nbl{list-style:none;margin:0;padding:0;font-size:12px;color:var(--muted);display:flex;flex-direction:column;gap:2px}
 .nbl b{color:var(--ink);font-weight:600}
+.ealerts,.facl{list-style:none;margin:0 0 8px;padding:0;display:flex;flex-direction:column;gap:4px}
+.ealerts li,.facl li{font-size:12.5px;border:1px solid var(--line);border-radius:7px;padding:5px 8px;background:var(--panel-2);display:flex;flex-direction:column;gap:3px}
+.ealerts li.s2{border-color:var(--danger)}.ealerts li.s1{border-color:#d6971f}.ealerts li.ok{color:var(--ok)}
+.ealerts button,.facl .jump{border:0;background:transparent;padding:0;font:inherit;color:inherit;text-align:left;cursor:pointer}
+.ealerts button:hover,.facl .jump:hover{text-decoration:underline}
+.facl .fh{display:flex;justify-content:space-between;align-items:center;gap:6px}
+.facl .fh span{color:var(--muted);font-variant-numeric:tabular-nums}
+.facl .jump{color:var(--danger);font-size:12px}
+.facl .fb{display:flex;gap:4px}.facl .fb button,.gset .stp button{border:1px solid var(--line);background:var(--panel);border-radius:6px;padding:2px 8px;font-size:12px;cursor:pointer}
+.gset{display:flex;align-items:center;gap:8px;font-size:12px;flex-wrap:wrap}
+.gset>button{min-width:74px;border:1px solid var(--line);background:var(--panel);border-radius:6px;padding:3px 8px;font-size:12px;cursor:pointer}
+.gset>button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.gset .stp{display:inline-flex;align-items:center;gap:4px;color:var(--muted)}.gset .stp b{color:var(--ink);min-width:58px;text-align:center;font-variant-numeric:tabular-nums}
+.goods details summary{cursor:pointer;font-size:12px;color:var(--muted)}
 .goods{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
 .goods li{border:1px solid var(--line);border-radius:8px;padding:9px 10px;display:flex;flex-direction:column;gap:6px;background:var(--panel-2)}
 .goods .th{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
@@ -300,7 +314,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
       <div class="stat util" title="Kapacitás mínusz igény. Részletek: kapacitás / igény. A szomszédtól vett víz beleszámít."><span class="l">Víz</span><span class="v" id="uWat">–</span><span class="d" id="uWatD"></span></div>
       <div class="stat util" title="Tisztítókapacitás mínusz keletkező szennyvíz. Részletek: kapacitás / keletkező."><span class="l">Szennyvíz</span><span class="v" id="uSew">–</span><span class="d" id="uSewD"></span></div>
       <div class="stat util" title="Feldolgozó kapacitás (plusz amit a szomszéd elvisz) mínusz keletkező szemét. Részletek: kapacitás / keletkező."><span class="l">Szemét</span><span class="v" id="uGarb">–</span><span class="d" id="uGarbD"></span></div>
-      <button class="stat util stock" id="stockStat" type="button" title="Árukészlet. Kattints a részletekért (Gyártás fül)."><span class="l">Készlet</span><span class="v sm" id="uStock">–</span><span class="d" id="uStockD"></span></button>
+      <button class="stat util stock" id="stockStat" type="button" title="Árukészlet. Kattints a részletekért (Gazdaság fül)."><span class="l">Készlet</span><span class="v sm" id="uStock">–</span><span class="d" id="uStockD"></span></button>
     </div>
     <button class="hallbtn helpbtn" id="fsBtn" title="Teljes képernyő" aria-label="Teljes képernyő" hidden>⛶</button>
     <button class="hallbtn helpbtn" id="helpBtn" title="Útmutató: mi mire való" aria-label="Útmutató">?</button>
@@ -318,7 +332,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
         <button data-tab="ord" aria-pressed="false">Rendeletek</button>
         <button data-tab="stats" aria-pressed="false">Grafikonok</button>
         <button data-tab="advice" aria-pressed="false">Tanácsadók</button>
-        <button data-tab="prod" aria-pressed="false">Gyártás</button>
+        <button data-tab="prod" aria-pressed="false">Gazdaság</button>
         <button data-tab="research" aria-pressed="false">Kutatás</button>
         <button data-tab="settings" aria-pressed="false">Beállítás</button>
       </div>
@@ -422,11 +436,18 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
         <ul class="spark" id="sparkList"></ul>
       </section>
       <section data-tab="prod" hidden>
-        <h2>Gyártás</h2>
+        <h2>Gazdaság</h2>
+        <ul class="ealerts" id="econAlerts"></ul>
         <div class="note">Búzafarm → búza → malom → liszt → pékség → kenyér: olcsó, de kis haszon (a búza évszakfüggő, ősszel érdemes raktározni). Acélmű → acél → alkatrészgyár → alkatrész → autógyár → autó: lassú és drága, de egy autó sokat ér (kutatás kell hozzá). A kenyeret és az autót a lakók is megveszik, a többit eladhatod a szomszédoknak. Ehhez út kell a térkép széléig. Ha kevés az alapanyag, a játék megveszi a szomszédoktól, ha engeded.</div>
         <div id="prodSum"></div>
       </section>
       <section data-tab="prod" hidden>
+        <h2>Gyárak és farmok</h2>
+        <ul class="facl" id="facList"></ul>
+      </section>
+      <section data-tab="prod" hidden>
+        <h2>Áruk</h2>
+        <div class="note">Vétel: ha kevés az áru, a játék megveszi a szomszédtól, de csak a megadott maximális áron belül. Eladás: a tartalék feletti részt eladja. A tartalék azt jelenti, hány hónapnyi saját felhasználást (gyárak + lakók) tart meg, és ha a vétel be van kapcsolva, ennyit előre fel is tölt.</div>
         <ul class="goods" id="goodsList"></ul>
       </section>
       <section data-tab="research" hidden>
@@ -717,7 +738,7 @@ function newGame(seed){
     if(Math.abs(x-rx)<w||dl<lr) terrain[i]=WATER;
     else if(n2(x,y)*0.7+n1(x+31,y+17)*0.5>0.78) terrain[i]=TREE;
   }
-  S={v:1,seed,name:'Újfalu',money:20000,month:0,tax:9,speed:1,terrain,kind,dens,burn,build:new Uint8Array(NN),ruin:new Uint8Array(NN),ruinD:new Uint8Array(NN),lvl:new Uint8Array(NN),pipe:new Uint8Array(NN),trade:{pow:'auto',wat:'auto',garb:'auto'},lastInc:0,lastExp:0,lastTrade:0,rank:0,cam:null};
+  S={v:1,seed,name:'Újfalu',money:20000,month:0,tax:9,speed:1,terrain,kind,dens,burn,build:new Uint8Array(NN),ruin:new Uint8Array(NN),ruinD:new Uint8Array(NN),lvl:new Uint8Array(NN),pause:new Uint8Array(NN),pipe:new Uint8Array(NN),trade:{pow:'auto',wat:'auto',garb:'auto'},lastInc:0,lastExp:0,lastTrade:0,rank:0,cam:null};
   // autópálya keresztül a térképen
   const hy=Math.floor(N*0.56);
   for(let x=0;x<N;x++){const i=hy*N+x;kind[i]=ROAD;if(terrain[i]===TREE)terrain[i]=0;}
@@ -737,7 +758,7 @@ function newGame(seed){
   pushMsg('Üdv, polgármester! Jelölj ki övezeteket az utak mellett. Az első küldetésedet a Városháza Város fülén találod.','good');
 }
 
-function fixDefaults(){S.ord=S.ord&&typeof S.ord==='object'?S.ord:{};S.hist=Array.isArray(S.hist)?S.hist:[];calcOE();for(const a of ['ruin','ruinD','lvl'])S[a]=S[a]&&S[a].length===NN?Uint8Array.from(S[a]):new Uint8Array(NN);S.manMonth=S.manMonth&&typeof S.manMonth==='object'?S.manMonth:{inc:0,exp:0};S.research=S.research&&typeof S.research==='object'?S.research:{budget:0,done:{},cur:null,pts:0};S.research.done=S.research.done||{};S.research.pts=+S.research.pts||0;S.research.budget=+S.research.budget||0;S.watStock=+S.watStock||0;S.lfStock=+S.lfStock||0;if(!isFinite(S.money))S.money=0;if(!isFinite(S.month))S.month=0;if(!isFinite(S.rank))S.rank=0;if(!SPEEDMS.hasOwnProperty(S.speed))S.speed=1;S.taxR??=S.tax??9;S.taxC??=S.tax??9;S.taxI??=S.tax??9;S.loans??=[];S.mission??=0;S.disasters??=true;S.gExport??=false;S.trade.garb??=(S.gExport?'auto':'off');S.lastLoan??=0;S.hiTechMsg??=0;fixNb()}
+function fixDefaults(){S.ord=S.ord&&typeof S.ord==='object'?S.ord:{};S.hist=Array.isArray(S.hist)?S.hist:[];calcOE();S.gmax=S.gmax&&typeof S.gmax==='object'?S.gmax:{};S.gkeep=S.gkeep&&typeof S.gkeep==='object'?S.gkeep:{};for(const a of ['ruin','ruinD','lvl','pause'])S[a]=S[a]&&S[a].length===NN?Uint8Array.from(S[a]):new Uint8Array(NN);S.manMonth=S.manMonth&&typeof S.manMonth==='object'?S.manMonth:{inc:0,exp:0};S.research=S.research&&typeof S.research==='object'?S.research:{budget:0,done:{},cur:null,pts:0};S.research.done=S.research.done||{};S.research.pts=+S.research.pts||0;S.research.budget=+S.research.budget||0;S.watStock=+S.watStock||0;S.lfStock=+S.lfStock||0;if(!isFinite(S.money))S.money=0;if(!isFinite(S.month))S.month=0;if(!isFinite(S.rank))S.rank=0;if(!SPEEDMS.hasOwnProperty(S.speed))S.speed=1;S.taxR??=S.tax??9;S.taxC??=S.tax??9;S.taxI??=S.tax??9;S.loans??=[];S.mission??=0;S.disasters??=true;S.gExport??=false;S.trade.garb??=(S.gExport?'auto':'off');S.lastLoan??=0;S.hiTechMsg??=0;fixNb()}
 function afterLoad(){
   fixDefaults();
   grassCol=new Array(NN);
@@ -759,7 +780,7 @@ const isBuilding=i=>{const k=S.kind[i];return (isZone(k)&&S.dens[i]>0)||(isFacil
 const conductor=k=>k!==0&&k!==RUBBLE;
 const onEdge=i=>{const x=i%N,y=(i/N)|0;return x===0||y===0||x===N-1||y===N-1};
 const hiTech=i=>S.kind[i]===IZ&&S.month>=HITECH_MONTH&&covEdu[i]>0.2;
-function cons(i){const k=S.kind[i];if(S.build[i])return 0;if(isZone(k))return S.dens[i]>0?(S.dens[i]+1)*OE.pow*SE().pow*(isNight()?OE.powNight:1):0;if(k===METRO)return 10;if(k===PORT)return 5;if(k===WAREHOUSE)return 3;if(isFactory(k))return FPOW[k];if(isZone(k))return S.dens[i]>0?S.dens[i]+1:0;if(k>=POLICE&&k<=HOSP)return 5;if(k===PUMP||k===TREAT||k===RECYC)return 4;if(k===HALL)return 5;if(k===STADIUM||k===AMUSE)return 8;return 0}
+function cons(i){const k=S.kind[i];if(S.build[i])return 0;if(isZone(k))return S.dens[i]>0?(S.dens[i]+1)*OE.pow*SE().pow*(isNight()?OE.powNight:1):0;if(k===METRO)return 10;if(k===PORT)return 5;if(k===WAREHOUSE)return 3;if(isFactory(k))return S.pause[i]?0:FPOW[k];if(isZone(k))return S.dens[i]>0?S.dens[i]+1:0;if(k>=POLICE&&k<=HOSP)return 5;if(k===PUMP||k===TREAT||k===RECYC)return 4;if(k===HALL)return 5;if(k===STADIUM||k===AMUSE)return 8;return 0}
 function wcons(i){const k=S.kind[i];if(S.build[i])return 0;if(isZone(k))return S.dens[i]>0?(S.dens[i]+1)*OE.wat*SE().wat:0;if(isFactory(k))return FWAT[k];if(isZone(k))return S.dens[i]>0?S.dens[i]+1:0;if(k===COAL)return 4;if(k>=POLICE&&k<=HOSP||k===HALL)return 3;if(k===STADIUM||k===AMUSE)return 4;return 0}
 function nb(i,f){const x=i%N,y=(i/N)|0;if(x>0)f(i-1);if(x<N-1)f(i+1);if(y>0)f(i-N);if(y<N-1)f(i+N)}
 
@@ -831,7 +852,7 @@ function computeTraffic(){traffic.fill(0);cong.fill(0);
   for(let i=0;i<NN;i++)if(S.kind[i]===ROAD){near[i]=i;dd[i]=0;q.push(i)}
   for(let h=0;h<q.length;h++){const i=q[h];if(dd[i]>=3)continue;nb(i,j=>{if(dd[j]===255){dd[j]=dd[i]+1;near[j]=near[i];q.push(j)}})}
   for(let i=0;i<NN;i++){const k=S.kind[i],d=S.dens[i];let tr=0;
-    if(k===RZ)tr=RPOP[d]*0.5;else if(k===CZ)tr=CJOB[d]*0.45;else if(k===IZ)tr=IJOB[d]*0.45;else if(SJOB[k]&&!S.build[i])tr=SJOB[k]*0.3;
+    if(k===RZ)tr=RPOP[d]*0.5;else if(k===CZ)tr=CJOB[d]*0.45;else if(k===IZ)tr=IJOB[d]*0.45;else if(SJOB[k]&&!S.build[i]&&!S.pause[i])tr=SJOB[k]*0.3;
     if(!tr||near[i]<0)continue;traffic[near[i]]+=OE.traffic*SE().traffic*tr*(1-Math.max(Math.min(0.45,covBus[i]*0.8),Math.min(0.7,covMetro[i]*1.1)))}
   let cur=traffic.slice();
   for(let it=0;it<4;it++){const nx=new Float32Array(NN);for(let i=0;i<NN;i++){if(S.kind[i]!==ROAD)continue;let s=cur[i],n=1;nb(i,j=>{if(S.kind[j]===ROAD){s+=cur[j];n++}});nx[i]=s/n}cur=nx}
@@ -869,7 +890,7 @@ function recompute(){
   dirty=false;
 }
 function totals(){let p=0,c=0,ind=0,sv=0,na=0;
-  for(let i=0;i<NN;i++){const k=S.kind[i],d=S.dens[i];if(k===RZ)p+=RPOP[d];else if(k===CZ)c+=CJOB[d];else if(k===IZ)ind+=IJOB[d]*(covPort[i]>0?1.25:1);else if(SJOB[k]&&!S.burn[i]&&!S.build[i])sv+=SJOB[k];
+  for(let i=0;i<NN;i++){const k=S.kind[i],d=S.dens[i];if(k===RZ)p+=RPOP[d];else if(k===CZ)c+=CJOB[d];else if(k===IZ)ind+=IJOB[d]*(covPort[i]>0?1.25:1);else if(SJOB[k]&&!S.burn[i]&&!S.build[i]&&!S.pause[i])sv+=SJOB[k];
     if(isZone(k)&&!access[i])na++;}
   T.pop=p;T.jobsC=c;T.jobsI=ind;T.jobsS=sv;T.noAccess=na;
   const jobs=c+ind+sv, work=p*0.55, tk=v=>(v-8)*0.055;
@@ -936,7 +957,7 @@ function simMonth(){
   const inc=Math.round((has('taxoffice')?1.06:1)*(S.taxR*(T.pop*0.06+T.jobsS*0.02)+S.taxC*T.jobsC*0.05+S.taxI*T.jobsI*0.05)+OE.incPerPop*T.pop+sales);
   let loanPay=0;S.loans=S.loans.filter(l=>{loanPay+=l.pay||LOAN.pay;l.left--;return l.left>0});
   if(loanPay&&!S.loans.length)pushMsg('Az utolsó hitelt is visszafizetted.','good');
-  const resSpend=S.research.budget||0,ordSpend=ordCost();S.lastOrd=ordSpend;let exp=buys+loanPay+resSpend+ordSpend;for(let i=0;i<NN;i++){exp+=(UPKEEP[S.kind[i]]||0)*upkMul(i);if(S.pipe[i])exp+=0.2}exp=Math.round(exp);
+  const resSpend=S.research.budget||0,ordSpend=ordCost();S.lastOrd=ordSpend;let exp=buys+loanPay+resSpend+ordSpend;for(let i=0;i<NN;i++){exp+=(UPKEEP[S.kind[i]]||0)*upkMul(i)*(S.pause[i]?0.25:1);if(S.pipe[i])exp+=0.2}exp=Math.round(exp);
   S.money+=inc-exp;S.lastInc=inc;S.lastExp=exp;
   while(S.money<0&&S.loans.length<LOAN.max){S.loans.push({left:LOAN.months,pay:LOAN.autoPay,auto:1});S.money+=LOAN.amount;
     pushMsg(`Kiürült a kassza, ezért a bank kényszerhitelt adott: +${fmtN(LOAN.amount)} Ft, de drágábban: ${LOAN.autoPay} Ft/hó, ${LOAN.months} hónapig. Még ${LOAN.max-S.loans.length} hitel fér bele.`,'warn')}
@@ -1078,8 +1099,8 @@ function price(d,r,side){const b=BASEP[r],k=S.nb[d].mk[r];
 let TR={};
 function resetTr(rs){for(const d of ALLD){TR[d]=TR[d]||{};for(const r of rs)TR[d][r]={buy:0,sell:0}}}
 const prefer=(r,side)=>(a,b)=>{const pa=isPlayer(a),pb=isPlayer(b);if(pa!==pb)return pa?-1:1;const x=price(a,r,side),y=price(b,r,side);return side==='b'?x-y:y-x};
-function buyFrom(r,dirs,want){let got=0;want=Math.ceil(want-1e-9);if(want<=0)return 0;
-  for(const d of dirs.filter(d=>S.nb[d].allowBuy).sort(prefer(r,'b'))){const q=Math.max(0,Math.min(want-got,Math.floor(lim(d,r).sup-TR[d][r].buy)));if(q>0){TR[d][r].buy+=q;got+=q}if(got>=want)break}
+function buyFrom(r,dirs,want,maxP){let got=0;want=Math.ceil(want-1e-9);if(want<=0)return 0;
+  for(const d of dirs.filter(d=>S.nb[d].allowBuy&&(!maxP||price(d,r,'b')<=maxP+1e-9)).sort(prefer(r,'b'))){const q=Math.max(0,Math.min(want-got,Math.floor(lim(d,r).sup-TR[d][r].buy)));if(q>0){TR[d][r].buy+=q;got+=q}if(got>=want)break}
   return got}
 function sellTo(r,dirs,amount){let out=0;amount=Math.floor(amount);if(amount<=0)return 0;
   for(const d of dirs.filter(d=>S.nb[d].allowSell).sort(prefer(r,'s'))){const q=Math.max(0,Math.min(amount-out,Math.floor(lim(d,r).dem-TR[d][r].sell)));if(q>0){TR[d][r].sell+=q;out+=q}if(out>=amount)break}
@@ -1094,7 +1115,7 @@ function nbJobs(d){if(isPlayer(d))return Math.round(clampN(NBP[d].jobs,0,1e5));r
 function nbConnected(d,r){return r==='pow'?!!(T.connPow||{})[d]:r==='wat'?!!(T.connWat||{})[d]:(T.roadDirs||[]).includes(d)}
 // Amit egy játékos szomszédnak meghirdetünk (szomszédonként)
 function myOfferFor(d){const tm=S.trade,can=(m,side)=>m==='auto'||m===side,n=S.nb[d],o={};
-  const g=(r,sur,def)=>{o[r]={sur:n.allowSell&&can(tm[r],'sell')?Math.max(0,Math.floor(sur)):0,def:n.allowBuy&&can(tm[r],'buy')?Math.max(0,Math.ceil(def)):0}};
+  const g=(r,sur,def)=>{o[r]={sur:n.allowSell&&can(tm[r],'sell')?Math.max(0,Math.floor(sur)):0,def:n.allowBuy&&can(tm[r],'buy')&&!(S.gmax&&S.gmax[r]&&price(d,r,'b')>S.gmax[r]+1e-9)?Math.max(0,Math.ceil(def)):0}};
   g('pow',(T.powESur||{})[d]||0,(T.powEDef||{})[d]||0);g('wat',(T.watESur||{})[d]||0,(T.watEDef||{})[d]||0);
   const road=(T.roadDirs||[]).includes(d);g('garb',road?T.gSpace||0:0,road?T.gDef||0:0);
   for(const k of GKEYS)g(k,road?(T.gdAvail||{})[k]||0:0,road?(T.gdShort||{})[k]||0:0);
@@ -1134,30 +1155,48 @@ const fmtP=v=>{const r=Math.round((+v||0)*10),a=Math.abs(r);return (r<0?'-':'')+
 const DOMP={bread:2.4,cars:250};
 const domDemand=g=>g==='bread'?Math.round(T.pop*0.04):g==='cars'?Math.floor(T.pop*0.0015):0;
 const farmPol=i=>Math.max(0.4,1-(pol[i]||0)/50);
-function factoryState(i){if(S.build[i])return 'épül';if(S.burn[i])return 'ég';if(!powered[i]&&S.kind[i]!==FARM)return 'nincs áram';if(!access[i])return 'nincs út';return 'működik'}
+function factoryState(i){if(S.build[i])return 'épül';if(S.burn[i])return 'ég';if(S.pause&&S.pause[i])return 'szünetel';if(!powered[i]&&S.kind[i]!==FARM)return 'nincs áram';if(!access[i])return 'nincs út';return 'működik'}
+const buyOn=g=>S.trade[g]==='buy'||S.trade[g]==='auto',sellOn=g=>S.trade[g]==='sell'||S.trade[g]==='auto';
+const gMax=g=>(S.gmax&&+S.gmax[g])||0,gKeep=g=>S.gkeep&&S.gkeep[g]!=null?+S.gkeep[g]:1;
+const FKINDS=[FARM,MILL,STEELW,BAKERY,PARTSF,CARF];
+function needMonth(g,cnt){let n=0;for(const k in RECIPE){const rc=RECIPE[k];if(rc.in&&rc.in[g])n+=rc.in[g]*(cnt[k]||0)}return n+domDemand(g)}
 function produceMonth(){
   resetTr(GKEYS);const rd=T.goodsDirs||T.roadDirs||[],G=S.goods,z=()=>Object.fromEntries(GKEYS.map(g=>[g,0]));
-  const prod=z(),used=z(),bought=z(),sold=z(),dom=z(),short=z();
-  const cnt={},cntN={};for(let i=0;i<NN;i++){const k=S.kind[i];if(isFactory(k)&&factoryState(i)==='működik'){cnt[k]=(cnt[k]||0)+lvlMul(i)*(covPort[i]>0?1.25:1)*(k===FARM?farmPol(i):1);cntN[k]=(cntN[k]||0)+1}}
+  const prod=z(),used=z(),bought=z(),sold=z(),dom=z(),short=z(),why={},fst={},cntAll={};
+  const cnt={},cntN={},blist={};for(let i=0;i<NN;i++){const k=S.kind[i];if(!isFactory(k))continue;cntAll[k]=(cntAll[k]||0)+1;const st=factoryState(i);
+    if(st==='működik'){const w=lvlMul(i)*(covPort[i]>0?1.25:1)*(k===FARM?farmPol(i):1);cnt[k]=(cnt[k]||0)+w;cntN[k]=(cntN[k]||0)+1;(blist[k]=blist[k]||[]).push([i,w])}else fst[i]=st}
   T.factories=cntN;
-  for(const k of [FARM,MILL,STEELW,BAKERY,PARTSF,CARF]){const n=cnt[k]||0;if(!n)continue;const rc=RECIPE[k],sf=k===FARM?SE().farm:1;let ratio=1;
-    for(const g in rc.out){const q=rc.out[g]*n*sf;if(q>0)ratio=Math.min(ratio,Math.max(0,(goodsCap(g)-G[g])/q))}
-    if(rc.in){const cr=ratio;let ri=1;for(const g in rc.in){const need=rc.in[g]*n*cr;
-        if(G[g]<need){const m=S.trade[g];if(m==='buy'||m==='auto'){const got=buyFrom(g,rd,need-G[g]);G[g]+=got;bought[g]+=got}}
-        if(G[g]<need)short[g]+=need-G[g];if(need>0)ri=Math.min(ri,G[g]/need)}
-      ratio=cr*Math.min(1,ri);
+  // vásárlás a szomszédtól: csak ha engedélyezve van, a maximális áron belül, és nincs adósság
+  const buy=(g,q)=>{if(!buyOn(g)||q<=0)return 0;if(S.money<0){why[g]='nincs pénz';return 0}
+    const got=buyFrom(g,rd,q,gMax(g));if(got<Math.ceil(q-1e-9)&&!why[g])why[g]=gMax(g)?'túl drága / nincs kínálat':'nincs kínálat';return got};
+  for(const k of FKINDS){const n=cnt[k]||0;if(!n)continue;const rc=RECIPE[k],sf=k===FARM?SE().farm:1;let ratio=1,cause='';
+    for(const g in rc.out){const q=rc.out[g]*n*sf;if(q>0){const r=Math.max(0,(goodsCap(g)-G[g])/q);if(r<ratio){ratio=r;cause=`megtelt a raktár (${GOODS[g].n.toLowerCase()})`}}}
+    if(rc.in){const cr=ratio;let ri=1,ing='';for(const g in rc.in){const need=rc.in[g]*n*cr;
+        if(G[g]<need){const got=buy(g,need-G[g]);G[g]+=got;bought[g]+=got}
+        if(G[g]<need)short[g]+=need-G[g];if(need>0&&G[g]/need<ri){ri=G[g]/need;ing=g}}
+      if(ri<1){ratio=cr*Math.max(0,ri);cause=`${GOODS[ing].n.toLowerCase()}hiány${!buyOn(ing)?' (vásárlás kikapcsolva)':why[ing]?` (${why[ing]})`:''}`}
       for(const g in rc.in){const u=Math.floor(rc.in[g]*n*ratio);G[g]-=u;used[g]+=u}}
-    for(const g in rc.out){const q=Math.floor(rc.out[g]*n*ratio*(k===FARM?SE().farm:1)),add=Math.max(0,Math.min(q,goodsCap(g)-G[g]));G[g]+=add;prod[g]+=add}}
+    for(const g in rc.out){const q=Math.floor(rc.out[g]*n*ratio*sf),add=Math.max(0,Math.min(q,goodsCap(g)-G[g]));G[g]+=add;prod[g]+=add}
+    // melyik épület dolgozik: a kapacitás arányában, a lista elejétől
+    let acc=0;const tgt=n*Math.min(1,ratio)-1e-6;for(const [i,w] of blist[k]){fst[i]=acc<tgt?'működik':cause||'áll';acc+=w}}
   for(const g of ['bread','cars']){const d=Math.min(G[g],domDemand(g));G[g]-=d;dom[g]=d}
-  const avail={};
-  for(const g of GKEYS){const m=S.trade[g];let reserve=0;
-    if(m==='auto'){for(const k in RECIPE){const rc=RECIPE[k];if(rc.in&&rc.in[g])reserve+=rc.in[g]*(cnt[k]||0)}reserve+=domDemand(g)}
-    avail[g]=Math.max(0,Math.floor(G[g]-reserve));
-    if((m==='sell'||m==='auto')&&avail[g]>0){const q=sellTo(g,rd,avail[g]);G[g]-=q;sold[g]=q}}
-  T.gd={prod,used,bought,sold,dom,short};T.gdAvail=avail;T.gdShort=short;
-  T.domInc=Math.round(dom.bread*DOMP.bread+dom.cars*DOMP.cars)}
+  const avail={},need={};
+  for(const g of GKEYS){need[g]=needMonth(g,cnt);const keep=Math.ceil(need[g]*gKeep(g));
+    // tartalék feltöltése előre (pl. télire búza), ha a vétel be van kapcsolva
+    if(keep>G[g]){const room=Math.max(0,Math.min(keep,goodsCap(g))-G[g]),got=buy(g,room);G[g]+=got;bought[g]+=got}
+    avail[g]=Math.max(0,Math.floor(G[g]-(sellOn(g)?keep:0)));
+    if(sellOn(g)&&avail[g]>0){const q=sellTo(g,rd,avail[g]);G[g]-=q;sold[g]=q}}
+  T.gd={prod,used,bought,sold,dom,short,need,why};T.gdAvail=avail;T.gdShort=short;T.fst=fst;T.fcntAll=cntAll;
+  T.domInc=Math.round(dom.bread*DOMP.bread+dom.cars*DOMP.cars);econAlerts()}
+function econAlerts(){const A=[],grp={},fst=T.fst||{},gd=T.gd||{};
+  for(const i in fst){const st=fst[i];if(st==='működik'||st==='épül')continue;const k=S.kind[+i];if(!isFactory(k))continue;const key=k+'|'+st;(grp[key]=grp[key]||{k,st,list:[]}).list.push(+i)}
+  for(const key in grp){const g=grp[key];A.push({sev:g.st==='szünetel'?0:2,txt:`${g.list.length} ${KN[g.k].toLowerCase()} áll: ${g.st}`,list:g.list})}
+  for(const g of GKEYS){const n=(gd.need||{})[g]||0,s=S.goods[g]||0,cap=goodsCap(g);
+    if(n>0&&s+((gd.prod||{})[g]||0)<n&&!(buyOn(g)&&!(gd.why||{})[g]))A.push({sev:1,txt:`${GOODS[g].n}: a készlet nem elég a következő hónapra (${fmtN(s)} / ${fmtN(Math.ceil(n))})`,g});
+    else if(s>=cap*0.98&&cap>0&&((gd.prod||{})[g]||0)>0&&!((gd.sold||{})[g]>0))A.push({sev:1,txt:`${GOODS[g].n}: megtelt a raktár, és ${sellOn(g)?'nincs vevő':'az eladás ki van kapcsolva'}`,g})}
+  A.sort((a,b)=>b.sev-a.sev);T.econ=A}
 function goodsLedger(){let exp=0,imp=0;for(const d of DIRS)for(const g of GKEYS){const t=TR[d]&&TR[d][g];if(!t)continue;exp+=t.sell*price(d,g,'s');imp+=t.buy*price(d,g,'b')}
-  let up=0;for(let i=0;i<NN;i++)if(isFactory(S.kind[i]))up+=(UPKEEP[S.kind[i]]||0)*upkMul(i);
+  let up=0;for(let i=0;i<NN;i++)if(isFactory(S.kind[i]))up+=(UPKEEP[S.kind[i]]||0)*upkMul(i)*(S.pause[i]?0.25:1);
   return{dom:T.domInc||0,exp:Math.round(exp),imp:Math.round(imp),up:Math.round(up)}}
 
 /* ---------- kutatás ---------- */
@@ -1715,12 +1754,15 @@ function helpSections(){
    <li>Az árak és az igények <b>havonta változnak</b>, és néha események borítják fel a piacot (hőség, aszály, új erőmű a szomszédban).</li>
    <li>Ha többen is kínálnak, a játék a legjobb árat választja. A játékos szomszédok elsőbbséget kapnak.</li>
    <li><b>Kikötő</b> (víz mellé): megjelenik a <b>Folyami kereskedő</b>, aki csak árukkal kereskedik, de sokat vesz és jól fizet.</li></ul>`},
-  {id:'prod',t:'Gyártás, raktár, kézi kereskedés',h:`${hT([FARM,MILL,BAKERY,STEELW,PARTSF,CARF].map(k=>[KN[k],rec(k),TOOLS.find(t=>t.kind===k).cost,UPKEEP[k]]),['Gyár','Termelés (1. szint)','Ár (Ft)','Fenntartás (Ft/hó)'])}
+  {id:'prod',t:'Gazdaság: gyártás, raktár, kereskedés',h:`${hT([FARM,MILL,BAKERY,STEELW,PARTSF,CARF].map(k=>[KN[k],rec(k),TOOLS.find(t=>t.kind===k).cost,UPKEEP[k]]),['Gyár','Termelés (1. szint)','Ár (Ft)','Fenntartás (Ft/hó)'])}
    <ul><li>A <b>kenyeret és az autót a lakók is megveszik</b>. Minél nagyobb a város, annál többet.</li>
    <li>A kenyér gyors, de kis haszon. Az autó lassú és drága (Autóipar kutatás kell hozzá), de messze a legtöbbet hozza.</li>
    <li>Ha hiányzik az alapanyag, a játék megveszi a szomszédtól, ha engeded.</li>
+   <li><b>Áruk beállításai</b> (Gazdaság fül): <b>Vétel</b> be/ki és <b>maximális ár</b> (efölött nem vesz, így egy drágulás nem visz csődbe); <b>Eladás</b> be/ki és <b>tartalék</b> hónapokban. A tartalékot sosem adja el, és ha a vétel be van kapcsolva, ennyit előre fel is tölt (pl. búzát télire). Adósság idején nem vásárol automatikusan.</li>
+   <li><b>Gyárak és farmok:</b> típusonként látod, hány működik és miért áll a többi (pl. „2 pékség áll: liszthiány (túl drága)”). Egy kattintással odaugrik a térkép. Bármelyik épületet szüneteltetheted (Infó → Szünet, vagy típusonként „Mind szünet”): nem termel, nem kér áramot, nincs munkahelye, és csak a fenntartás negyedét fizeted.</li>
+   <li><b>Értesítések</b> a Gazdaság fül tetején: leállt épületek, fogyó készlet, megtelt raktár. A felső sáv Készlet mutatója ⚠ jellel jelzi, ha baj van.</li>
    <li><b>Raktár:</b> több árut tárolhatsz. Raktár nélkül kevés fér el.</li>
-   <li><b>Raktároz mód:</b> semmit nem ad el és nem vesz magától. A Gyártás fül <b>kézi gombjaival</b> te döntöd el, mikor adsz el vagy veszel.</li>
+   <li><b>Raktároz mód:</b> semmit nem ad el és nem vesz magától. A Gazdaság fül <b>kézi gombjaival</b> te döntöd el, mikor adsz el vagy veszel.</li>
    <li>A kikötő 12 mezős körében a gyárak 25%-kal többet termelnek.</li></ul>`},
   {id:'upgrade',t:'Épületek fejlesztése',h:`<p>A termelő épületek (erőművek, víz, szennyvíz, hulladék, gyárak, raktár, kikötő) az Infó eszközzel rákattintva fejleszthetők, egészen a <b>${MAXLVL}. szintig</b>.</p>
    <ul><li>Szintenként <b>+${Math.round(LVLSTEP*100)}% teljesítmény</b>, a fenntartás csak +${Math.round(UPKSTEP*100)}%.</li><li>Az ár szintenként kb. 10%-kal nő. Az első fejlesztés az épület árának kb. harmada.</li>
@@ -1760,7 +1802,7 @@ $('hlpToc').addEventListener('click',e=>{const b=e.target.closest('button[data-h
 $('hlpMain').addEventListener('scroll',()=>{if(!HELPSEC)return;const m=$('hlpMain'),top=m.scrollTop+m.offsetTop+20;let cur=HELPSEC[0].id;for(const s of HELPSEC){const el=$('hlp-'+s.id);if(el&&el.offsetTop<=top)cur=s.id}
   document.querySelectorAll('#hlpToc button').forEach(b=>b.setAttribute('aria-current',b.dataset.h===cur?'true':'false'))});
 // "?" a panelek címsoraiban
-{const MAPH={'Küldetés':'start','Ranglista':'advisors','Kereslet':'zones','Közművek':'utils','Térképnézet':'controls','Költségvetés (előző hónap)':'money','Adókulcsok':'money','Bank':'money','Szomszédok':'trade','Szomszédonként':'trade','Rendeletek':'ords','Grafikonok':'advisors','Tanácsadók':'advisors','Gyártás':'prod','Kutatás':'research','Fejlesztések':'research','Többjátékos':'multi','Katasztrófák':'disasters'};
+{const MAPH={'Küldetés':'start','Ranglista':'advisors','Kereslet':'zones','Közművek':'utils','Térképnézet':'controls','Költségvetés (előző hónap)':'money','Adókulcsok':'money','Bank':'money','Szomszédok':'trade','Szomszédonként':'trade','Rendeletek':'ords','Grafikonok':'advisors','Tanácsadók':'advisors','Gazdaság':'prod','Gyárak és farmok':'prod','Áruk':'prod','Kutatás':'research','Fejlesztések':'research','Többjátékos':'multi','Katasztrófák':'disasters'};
   document.querySelectorAll('#panel h2').forEach(h=>{const id=MAPH[h.textContent.trim()];if(!id)return;const b=document.createElement('button');b.className='hq';b.type='button';b.textContent='?';b.title='Mi ez? Útmutató';b.setAttribute('aria-label','Útmutató: '+h.textContent.trim());b.onclick=()=>openHelp(id);h.appendChild(b)})}
 $('chClose').onclick=closeChart;$('chartModal').addEventListener('click',e=>{if(e.target.id==='chartModal')closeChart()});
 window.addEventListener('resize',()=>{if($('chartModal').hidden===false)drawChart()});
@@ -1778,18 +1820,38 @@ function renderNeighbors(){const el=$('nbCards');if(!el)return;nbSweep();
       `<ul class="nbl">${lines||'<li>Előző hónapban nem volt forgalom.</li>'}${(T.commuteBy||{})[d]?`<li><b>Ingázók</b>: ${fmtN(T.commuteBy[d])} lakosod dolgozik itt</li>`:''}${d==='p'?'':`<li>Szabad munkahely nála: ${fmtN(nbJobs(d))}${(T.roadDirs||[]).includes(d)?'':' (út kell az ingázáshoz)'}</li>`}</ul>`+
       `<div class="note">Ár, vétel/eladás: ${pr} Ft${pl?' (közös ár)':''}</div></div>`}).join('')}
 function bestPrices(g){const rd=T.goodsDirs||T.roadDirs||[],ds=rd.length?rd:DIRS;let b=Infinity,s=0;for(const d of ds){b=Math.min(b,price(d,g,'b'));s=Math.max(s,price(d,g,'s'))}return{b:fmtP(b),s:fmtP(s),conn:rd.length>0}}
+const GOPEN=new Set();let econJump={key:'',idx:-1};
+const maxStep=g=>Math.max(0.1,Math.round(GOODS[g].b*0.1*10)/10);
+function setPause(list,on){for(const i of list)if(isFactory(S.kind[i]))S.pause[i]=on?1:0;recompute();totals();
+  if(T.fst)for(const i of list)if(on)T.fst[i]='szünetel';else if(T.fst[i]==='szünetel')delete T.fst[i];
+  econAlerts();hud();if(inspected!=null&&list.includes(inspected))inspect(inspected,true);
+  pushMsg(`${list.length>1?list.length+' épület':KN[S.kind[list[0]]]} ${on?'szünetel':'újra dolgozik'}.`)}
+function jumpList(key,list){if(!list||!list.length)return;if(econJump.key!==key)econJump={key,idx:-1};econJump.idx=(econJump.idx+1)%list.length;const i=list[econJump.idx];focusTile(i);inspect(i)}
 function renderGoods(){const el=$('goodsList');if(!el)return;const gd=T.gd||{};
-  el.innerHTML=GKEYS.map(g=>{const G=GOODS[g],m=S.trade[g],v=k=>fmtN(((gd[k]||{})[g])||0),bp=bestPrices(g);
-    const segs=['off','buy','sell','auto'].map(x=>`<button data-g="${g}" data-m="${x}" aria-pressed="${m===x}">${{off:'Raktároz',buy:'Vesz',sell:'Elad',auto:'Automata'}[x]}</button>`).join('');
+  // értesítések
+  const ea=$('econAlerts');if(ea){const A=T.econ||[];
+    ea.innerHTML=A.length?A.map((a,ix)=>`<li class="s${a.sev}">${a.list?`<button data-ea="${ix}" title="Kattints: a térkép sorban az érintett épületekhez ugrik">${a.sev?'⚠ ':''}${a.txt} ›</button>`:`<span>⚠ ${a.txt}</span>`}</li>`).join(''):'<li class="ok">Minden gyár és farm rendben működik.</li>'}
+  // gyárak típusonként
+  const fl=$('facList');if(fl){const fst=T.fst||{},rows=[];
+    for(const k of FKINDS){const all=[];for(let i=0;i<NN;i++)if(S.kind[i]===k)all.push(i);if(!all.length)continue;
+      const run=all.filter(i=>fst[i]==='működik').length,grp={};for(const i of all){const st=fst[i]||factoryState(i);if(st!=='működik')(grp[st]=grp[st]||[]).push(i)}
+      const paused=all.filter(i=>S.pause[i]).length;
+      rows.push(`<li><div class="fh"><b>${KN[k]}</b><span>${run} / ${all.length} működik</span></div>`+
+        Object.entries(grp).map(([st,l])=>`<button class="jump" data-fj="${k}|${st}" data-l="${l.join(',')}">${l.length} áll: ${st} ›</button>`).join('')+
+        `<div class="fb">${paused<all.length?`<button data-fp="${k}" data-v="1">⏸ Mind szünet</button>`:''}${paused?`<button data-fp="${k}" data-v="0">▶ Mind indul</button>`:''}</div></li>`)}
+    fl.innerHTML=rows.join('')||'<li>Még nincs gyárad vagy farmod. Az eszköztár Gyártás csoportjából építhetsz.</li>'}
+  el.innerHTML=GKEYS.map(g=>{const G=GOODS[g],v=k=>fmtN(((gd[k]||{})[g])||0),bp=bestPrices(g),need=(gd.need||{})[g]||0,mx=gMax(g),kp=gKeep(g);
     const offers=(T.goodsDirs||T.roadDirs||[]).filter(d=>!isPlayer(d)).map(d=>{const k=S.nb[d].mk[g];return `${ROBOTNAME[d]}: vesz ${fmtN(Math.max(0,k.dem-MAN[d][g].sell))} db × ${fmtP(price(d,g,'s'))} · ad ${fmtN(Math.max(0,k.sup-MAN[d][g].buy))} db × ${fmtP(price(d,g,'b'))} Ft`}).join('<br>');
     const dom=g==='bread'||g==='cars'?`<span>lakók vettek ${v('dom')} (${fmtN(domDemand(g))} kell)</span>`:'';
-    const sh=(gd.short||{})[g]?`<span class="warn">hiányzott ${v('short')}</span>`:'';
-    return `<li><div class="th"><b>${G.n}</b><span>készlet ${fmtN(S.goods[g])} / ${fmtN(goodsCap(g))}</span></div>`+
+    const sh=(gd.short||{})[g]?`<span class="warn">hiányzott ${v('short')}${(gd.why||{})[g]?' – '+gd.why[g]:''}</span>`:'';
+    const pr=((gd.prod||{})[g])||0,gap=need-pr,enough=need>0?(gap<=0?' · a saját termelés fedezi':` · ${S.goods[g]>=gap*12?'több mint 12 hónapra':'~'+fmtP(S.goods[g]/gap)+' hónapra'} elég`):'';
+    return `<li><div class="th"><b>${G.n}</b><span>${fmtN(S.goods[g])} / ${fmtN(goodsCap(g))}${enough}</span></div>`+
       `<div class="gstat"><span>gyártott ${v('prod')}</span><span>felhasznált ${v('used')}</span>${dom}<span>vett ${v('bought')}</span><span>eladott ${v('sold')}</span>${sh}</div>`+
-      `<div class="note">${bp.conn?'Legjobb ár':'Ár (nincs út a szélig)'}: vétel ${bp.b} · eladás ${bp.s} Ft/db</div>`+
-      `<div class="note">${offers||'Kézi kereskedéshez út kell a térkép széléig.'}</div>`+
-      `<div class="mtr"><button data-mt="sell" data-g="${g}" data-q="10">Elad 10</button><button data-mt="sell" data-g="${g}" data-q="100">Elad 100</button><button data-mt="sell" data-g="${g}" data-q="all">Mindet</button><button data-mt="buy" data-g="${g}" data-q="10">Vesz 10</button><button data-mt="buy" data-g="${g}" data-q="100">Vesz 100</button></div>`+
-      `<div class="seg">${segs}</div></li>`}).join('');
+      `<div class="gset"><button data-gt="buy" data-g="${g}" aria-pressed="${buyOn(g)}">${buyOn(g)?'✓ ':''}Vétel</button><span class="stp">max. ár <button data-gs="max" data-d="-1" data-g="${g}" aria-label="Kisebb maximális ár">−</button><b>${mx?fmtP(mx)+' Ft':'nincs'}</b><button data-gs="max" data-d="1" data-g="${g}" aria-label="Nagyobb maximális ár">+</button></span></div>`+
+      `<div class="gset"><button data-gt="sell" data-g="${g}" aria-pressed="${sellOn(g)}">${sellOn(g)?'✓ ':''}Eladás</button><span class="stp">tartalék <button data-gs="keep" data-d="-1" data-g="${g}" aria-label="Kevesebb tartalék">−</button><b>${kp} hónap</b><button data-gs="keep" data-d="1" data-g="${g}" aria-label="Több tartalék">+</button></span></div>`+
+      `<div class="note">${bp.conn?'Legjobb ár most':'Ár (nincs út a szélig)'}: vétel ${bp.b} · eladás ${bp.s} Ft/db${need?` · havi igény ${fmtN(Math.ceil(need))}`:''}</div>`+
+      `<details data-gd="${g}"${GOPEN.has(g)?' open':''}><summary>Kézi kereskedés, ajánlatok</summary><div class="note">${offers||'Kézi kereskedéshez út kell a térkép széléig.'}</div>`+
+      `<div class="mtr"><button data-mt="sell" data-g="${g}" data-q="10">Elad 10</button><button data-mt="sell" data-g="${g}" data-q="100">Elad 100</button><button data-mt="sell" data-g="${g}" data-q="all">Mindet</button><button data-mt="buy" data-g="${g}" data-q="10">Vesz 10</button><button data-mt="buy" data-g="${g}" data-q="100">Vesz 100</button></div></details></li>`}).join('');
   const L=S.lastGoods||{dom:0,exp:0,imp:0,up:0},net=L.dom+L.exp-L.imp-L.up,cnt=T.factories||{},MM=S.manMonth||{inc:0,exp:0};
   const fac=[FARM,MILL,BAKERY,STEELW,PARTSF,CARF].map(k=>{let all=0;for(let i=0;i<NN;i++)if(S.kind[i]===k)all++;return all?`${KN[k]} ${cnt[k]||0}/${all}`:''}).filter(Boolean).join(' · ');
   $('prodSum').innerHTML=`<div class="row"><span>Lakóknak eladva</span><span class="v">+${fmtN(L.dom)} Ft</span></div><div class="row"><span>Szomszédnak eladva</span><span class="v">+${fmtN(L.exp)} Ft</span></div><div class="row"><span>Alapanyag-vásárlás</span><span class="v">−${fmtN(L.imp)} Ft</span></div><div class="row"><span>Gyárak fenntartása</span><span class="v">−${fmtN(L.up)} Ft</span></div><div class="row"><span><b>Gyártás haszna (előző hónap)</b></span><span class="v" style="color:${net<0?'var(--danger)':'var(--ok)'}">${net>=0?'+':'−'}${fmtN(Math.abs(net))} Ft</span></div><div class="row"><span>Kézi kereskedés ebben a hónapban</span><span class="v">+${fmtN(MM.inc)} / −${fmtN(MM.exp)} Ft</span></div><div class="note">${fac?'Működő gyárak: '+fac+'. ':'Még nincs gyárad. A Gyártás csoportban építhetsz. '}Raktárhely: ${T.whN||0} raktár. Raktároz módban semmit nem ad el és nem vesz magától, te döntesz a kézi gombokkal.</div>`}
@@ -1798,7 +1860,16 @@ function renderBoard(withDrop){const rows=boardRows();
   const html=drop=>rows.map((r,ix)=>`<li><span class="rk">${ix+1}.</span><b>${esc(String(r.name).slice(0,24))}</b><span>${r.me?'(te)':DIRNAME[r.dir].toLowerCase()+' szomszéd'} · ${fmtN(r.pop)} lakos · ${fmtN(r.money)} Ft · ${Math.round(r.sat)}%</span>${drop&&!r.me?`<button class="mpdrop" data-drop="${esc(r.pid)}">Bontás</button>`:''}</li>`).join('')+(rows.length<2?'<li><span>Még nincs játékos szomszédod. Ha valaki csatlakozik a multihoz (Beállítás fül), itt látod a városát is.</span></li>':'');
   const a=$('mpList');if(a)a.innerHTML=html(withDrop);const b=$('boardCity');if(b)b.innerHTML=html(false)}
 $('nbCards').addEventListener('click',e=>{const b=e.target.closest('button[data-nbt]');if(!b)return;const n=S.nb[b.dataset.d];if(b.dataset.nbt==='buy')n.allowBuy=!n.allowBuy;else n.allowSell=!n.allowSell;recompute();totals();hud();mpWrite(true)});
-$('goodsList').addEventListener('click',e=>{const mb=e.target.closest('button[data-mt]');if(mb){manualTrade(mb.dataset.g,mb.dataset.mt,mb.dataset.q==='all'?'all':+mb.dataset.q);return}const b=e.target.closest('button[data-g]');if(!b)return;S.trade[b.dataset.g]=b.dataset.m;renderGoods();mpWrite(true)});
+$('goodsList').addEventListener('click',e=>{const mb=e.target.closest('button[data-mt]');if(mb){manualTrade(mb.dataset.g,mb.dataset.mt,mb.dataset.q==='all'?'all':+mb.dataset.q);return}
+  const sm=e.target.closest('summary');if(sm){const g=sm.parentNode.dataset.gd;if(GOPEN.has(g))GOPEN.delete(g);else GOPEN.add(g);return}
+  const t=e.target.closest('button[data-gt]');if(t){const g=t.dataset.g;let b=buyOn(g),s2=sellOn(g);if(t.dataset.gt==='buy')b=!b;else s2=!s2;S.trade[g]=b&&s2?'auto':b?'buy':s2?'sell':'off';econAlerts();renderGoods();mpWrite(true);return}
+  const st=e.target.closest('button[data-gs]');if(st){const g=st.dataset.g,d=+st.dataset.d;
+    if(st.dataset.gs==='keep')S.gkeep[g]=Math.max(0,Math.min(12,gKeep(g)+d));
+    else{const step=maxStep(g),cur=gMax(g);let nv=cur?cur+d*step:(d>0?Math.round(GOODS[g].b*1.5*10)/10:0);if(nv<step-1e-9)nv=0;S.gmax[g]=Math.round(nv*10)/10}
+    renderGoods();mpWrite(true)}});
+$('econAlerts').addEventListener('click',e=>{const b=e.target.closest('button[data-ea]');if(!b)return;const a=(T.econ||[])[+b.dataset.ea];if(a&&a.list)jumpList(a.txt,a.list)});
+$('facList').addEventListener('click',e=>{const j=e.target.closest('button[data-fj]');if(j){jumpList(j.dataset.fj,j.dataset.l.split(',').map(Number));return}
+  const p=e.target.closest('button[data-fp]');if(p){const k=+p.dataset.fp,list=[];for(let i=0;i<NN;i++)if(S.kind[i]===k)list.push(i);setPause(list,p.dataset.v==='1');renderGoods()}});
 $('techList').addEventListener('click',e=>{const b=e.target.closest('button[data-tech]');if(!b)return;S.research.cur=b.dataset.tech;
   const R=S.research,tc=TECH[R.cur];if(R.pts>=tc.cost)researchMonth(0);else{renderResearch();pushMsg(`Kutatás indult: ${tc.name}.`)}});
 $('resBudget').oninput=e=>{S.research.budget=+e.target.value;renderResearch()};
@@ -1880,7 +1951,7 @@ function hud(){
   bal('uPow',T.supply,T.need,'MW');bal('uWat',T.wSupply,T.wNeed,'');bal('uSew',T.treatCap||0,T.sewage,'');bal('uGarb',T.gCap+T.gExport,T.garbage,'');
   {const SH={wheat:'Búza',flour:'Liszt',bread:'Kenyér',steel:'Acél',parts:'Alkatr.',cars:'Autó'},items=GKEYS.filter(g=>(S.goods[g]||0)>0||(T.gd&&T.gd.prod&&T.gd.prod[g]>0));
     const pct=g=>goodsCap(g)?S.goods[g]/goodsCap(g):0;
-    $('uStock').innerHTML=items.length?items.map(g=>`<span class="${pct(g)>=1?'full':''}">${SH[g]} ${fmtN(S.goods[g]||0)}</span>`).join(' · '):'nincs áru';
+    const ecn=(T.econ||[]).filter(a=>a.sev>=1).length;$('uStock').innerHTML=(ecn?`<span class="full">⚠ ${ecn}</span> · `:'')+(items.length?items.map(g=>`<span class="${pct(g)>=1?'full':''}">${SH[g]} ${fmtN(S.goods[g]||0)}</span>`).join(' · '):'nincs áru');
     const full=items.filter(g=>pct(g)>=1);$('uStockD').textContent=full.length?`tele: ${full.map(g=>SH[g].toLowerCase()).join(', ')} · raktár kell`:(items.length?`raktár: ${fmtN(T.whN||0)} db`:'')}
   if(T.watStockCap)$('uWatD').textContent+=` · tárolva ${fmtN(S.watStock||0)}`;
   if(T.lfCap)$('uGarbD').textContent+=` · lerakó ${Math.round((S.lfStock||0)/T.lfCap*100)}%`;
@@ -1984,7 +2055,8 @@ function inspect(i,refresh){
   if(k===LANDFILL)rows+=meter('Telítettség',T.lfCap?(S.lfStock||0)/T.lfCap*100:0,'#8a6a3a')+`<div class="row"><span>Lerakók összesen</span><span class="v">${fmtN(S.lfStock||0)} / ${fmtN(T.lfCap||0)}</span></div>`;
   if(GCAP[k])rows+=`<div class="row"><span>Szemétkapacitás</span><span class="v">${gcapOf(k)} / hó</span></div>`;
   if(isFactory(k)){const rc=RECIPE[k],fmtR=o=>Object.entries(o).map(([g,q])=>`${q} ${GOODS[g].n.toLowerCase()}`).join(' + ');
-    const st=factoryState(i);rows+=`<div class="row"><span>Termelés</span><span class="v">${rc.in?fmtR(rc.in)+' → ':''}${fmtR(rc.out)} / hó</span></div><div class="row"><span>Állapot</span>${st==='működik'?'<span class="pill ok">működik</span>':`<span class="pill no">${st}</span>`}</div>`}
+    const st0=factoryState(i),st=st0==='működik'&&T.fst&&T.fst[i]?T.fst[i]:st0;rows+=`<div class="row"><span>Termelés</span><span class="v">${rc.in?fmtR(rc.in)+' → ':''}${fmtR(rc.out)} / hó</span></div><div class="row"><span>Állapot</span>${st==='működik'?'<span class="pill ok">működik</span>':`<span class="pill no">${st}</span>`}</div>`;
+    if(!S.build[i])rows+=`<div class="btns"><button id="pauseBtn" title="Szünetelő épület nem termel, nem fogyaszt áramot, nincs munkahely, és csak a fenntartás negyedét fizeted.">${S.pause[i]?'▶ Indítás':'⏸ Szünet'}</button></div>`}
   if(CAP[k]&&!UPG.has(k))rows+=`<div class="row"><span>Teljesítmény</span><span class="v">${capOf(i)} MW</span></div>`;
   if(UPG.has(k)&&!S.build[i]){const L=lvlOf(i),same=S.kind.reduce((a,v)=>a+(v===k?1:0),0);
     rows+=`<div class="row"><span>Szint</span><span class="v">${L} / ${MAXLVL}</span></div><div class="row"><span>Most</span><span class="v">${outText(i,L)}${k===SOLAR?(isNight()?' (most éjszaka van)':''):''}</span></div>`;
@@ -1998,7 +2070,7 @@ function inspect(i,refresh){
   if(isZone(k)&&!refresh){}
   const x=i%N,y=(i/N)|0;
   el.innerHTML=`<h3><span>${name}</span><button aria-label="Bezárás" id="infoClose">×</button></h3><div class="sub">Mező ${x}, ${y}</div>${rows}`;
-  el.hidden=false;$('infoClose').onclick=()=>inspect(null);const rb=$('rebuildBtn');if(rb)rb.onclick=()=>rebuild(i);const ub=$('upgBtn');if(ub)ub.onclick=()=>upgrade(i);const ua=$('upgAllBtn');if(ua)ua.onclick=()=>upgradeAll(S.kind[i]);
+  el.hidden=false;$('infoClose').onclick=()=>inspect(null);const rb=$('rebuildBtn');if(rb)rb.onclick=()=>rebuild(i);const ub=$('upgBtn');if(ub)ub.onclick=()=>upgrade(i);const ua=$('upgAllBtn');if(ua)ua.onclick=()=>upgradeAll(S.kind[i]);const pb=$('pauseBtn');if(pb)pb.onclick=()=>setPause([i],!S.pause[i]);
 }
 
 
@@ -2078,7 +2150,7 @@ window.addEventListener('hashchange',hashJoin);
 
 /* ---------- mentés ---------- */
 function serialize(){return{ord:{...(S.ord||{})},hist:(S.hist||[]).slice(-600),nb:JSON.parse(JSON.stringify(S.nb||{})),nbSlots:{...(S.nbSlots||{})},goods:{...(S.goods||{})},lastGoods:S.lastGoods||null,lastDom:S.lastDom||0,mpMe:S.mpMe||null,mpLinks:(S.mpLinks||[]).slice(),mpBlock:(S.mpBlock||[]).slice(),research:JSON.parse(JSON.stringify(S.research||{})),over:S.over||null,showProbs:S.showProbs!==false,v:1,seed:S.seed,name:S.name,money:S.money,month:S.month,tax:S.tax,speed:S.speed,rank:S.rank,lastInc:S.lastInc,lastExp:S.lastExp,
-  terrain:Array.from(S.terrain),kind:Array.from(S.kind),dens:Array.from(S.dens),burn:Array.from(S.burn),ruin:Array.from(S.ruin),ruinD:Array.from(S.ruinD),lvl:Array.from(S.lvl),build:Array.from(S.build),pipe:Array.from(S.pipe),trade:{...S.trade},lastTrade:S.lastTrade,taxR:S.taxR,taxC:S.taxC,taxI:S.taxI,loans:S.loans.map(l=>({...l})),mission:S.mission,disasters:S.disasters,gExport:S.gExport,mpRoom:S.mpRoom||null,watStock:S.watStock||0,lfStock:S.lfStock||0,lfWarn:S.lfWarn||0,lastLoan:S.lastLoan,hiTechMsg:S.hiTechMsg,cam:{x:cam.x,y:cam.y,z:cam.z},news:news.slice()}}
+  terrain:Array.from(S.terrain),kind:Array.from(S.kind),dens:Array.from(S.dens),burn:Array.from(S.burn),ruin:Array.from(S.ruin),ruinD:Array.from(S.ruinD),lvl:Array.from(S.lvl),pause:Array.from(S.pause||[]),gmax:{...(S.gmax||{})},gkeep:{...(S.gkeep||{})},build:Array.from(S.build),pipe:Array.from(S.pipe),trade:{...S.trade},lastTrade:S.lastTrade,taxR:S.taxR,taxC:S.taxC,taxI:S.taxI,loans:S.loans.map(l=>({...l})),mission:S.mission,disasters:S.disasters,gExport:S.gExport,mpRoom:S.mpRoom||null,watStock:S.watStock||0,lfStock:S.lfStock||0,lfWarn:S.lfWarn||0,lastLoan:S.lastLoan,hiTechMsg:S.hiTechMsg,cam:{x:cam.x,y:cam.y,z:cam.z},news:news.slice()}}
 function load(d){if(!d||d.v!==1||!d.kind||d.kind.length!==NN)return false;
   S={...d,terrain:Uint8Array.from(d.terrain),kind:Uint8Array.from(d.kind),dens:Uint8Array.from(d.dens),burn:Uint8Array.from(d.burn),build:d.build&&d.build.length===NN?Uint8Array.from(d.build):new Uint8Array(NN),
     pipe:d.pipe&&d.pipe.length===NN?Uint8Array.from(d.pipe):new Uint8Array(NN),trade:d.trade||{pow:'auto',wat:'auto'},lastTrade:d.lastTrade||0};
